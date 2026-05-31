@@ -1,0 +1,22 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Logo Accesorios Margarita</title>
+  <desc id="desc">Logo circular rosa con monograma M, moño, corazon y textos Margarita Accesorios.</desc>
+  <circle cx="512" cy="512" r="472" fill="#FFF0F4"/>
+  <circle cx="512" cy="512" r="470" stroke="#F9D6DF" stroke-width="4"/>
+  <path d="M261 390C314 262 437 193 512 193C587 193 710 262 763 390" stroke="#D86588" stroke-width="9" stroke-linecap="round"/>
+  <path d="M265 655C326 769 430 818 512 818C594 818 698 769 759 655" stroke="#D86588" stroke-width="9" stroke-linecap="round"/>
+  <path d="M286 385C337 286 439 232 512 232C585 232 687 286 738 385" stroke="#E99AAF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M288 646C349 742 435 780 512 780C589 780 675 742 736 646" stroke="#E99AAF" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="255" cy="438" r="12" fill="#D86588"/>
+  <circle cx="769" cy="438" r="12" fill="#D86588"/>
+  <path d="M462 143C482 117 510 135 512 169C486 170 459 168 443 153C428 139 438 118 462 143Z" stroke="#D86588" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M562 143C542 117 514 135 512 169C538 170 565 168 581 153C596 139 586 118 562 143Z" stroke="#D86588" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M512 169C506 189 491 205 472 214" stroke="#D86588" stroke-width="8" stroke-linecap="round"/>
+  <path d="M512 169C518 189 533 205 552 214" stroke="#D86588" stroke-width="8" stroke-linecap="round"/>
+  <path d="M306 585H456" stroke="#E8B8C5" stroke-width="5" stroke-linecap="round"/>
+  <path d="M568 585H718" stroke="#E8B8C5" stroke-width="5" stroke-linecap="round"/>
+  <path d="M512 592C491 572 460 547 430 560C396 575 398 623 424 648C459 681 498 642 512 620C526 642 565 681 600 648C626 623 628 575 594 560C564 547 533 572 512 592Z" fill="#D86588"/>
+  <path d="M335 481C339 398 398 276 481 270C522 267 535 304 511 349C490 389 421 459 388 486C429 440 502 345 512 297C512 295 513 293 514 291C515 293 515 295 516 297C544 414 605 488 638 488C664 488 690 443 697 360C704 421 710 490 734 492C746 493 757 484 766 465C763 513 744 548 711 548C663 548 633 497 604 428C579 367 557 333 545 333C534 333 524 355 512 386C488 447 439 548 362 548C336 548 322 525 335 481Z" fill="#D86588"/>
+  <text x="512" y="695" text-anchor="middle" fill="#D86588" font-family="Georgia, 'Times New Roman', serif" font-size="84" letter-spacing="12">MARGARITA</text>
+  <text x="512" y="780" text-anchor="middle" fill="#D86588" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" letter-spacing="18">ACCESORIOS</text>
+</svg>
