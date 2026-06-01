@@ -31,6 +31,9 @@ Ejecutar en este orden:
 - `14_create_order_rpc_only.sql`: version corta para crear solo las funciones RPC de pedidos.
 - `15_seed_categories.sql`: inserta/reactiva categorias base si el selector aparece vacio.
 - `16_order_item_product_snapshot.sql`: guarda nombre/categoria/imagen del producto dentro del pedido y agrega confirmacion de comprobante.
+- `17_order_snapshot_trigger.sql`: version corta para snapshots de productos comprados y confirmacion de comprobante.
+- `18_product_options_order_snapshots.sql`: migracion final para multiples fotos, colores/modelos opcionales, snapshots de pedidos y RPCs actualizadas.
+- `19_unified_product_varieties.sql`: unifica colores/modelos como variedades con stock propio por variedad.
 
 ## Modelo incluido
 
@@ -51,3 +54,7 @@ Ejecutar en este orden:
 - RPC `marcar_pedido_entregado_admin` para actualizar entregas de pedidos
 - columnas de pedido: `estado`, `medio_pago`, `pago_estado`, `total`
 - subtotal por item guardado en `pedido_items.subtotal`
+- multiples imagenes por producto en `productos.imagenes_url`
+- colores y modelos opcionales en `productos.colores` y `productos.modelos`
+- color/modelo elegido en `pedido_items.color` y `pedido_items.modelo`
+- snapshot de producto comprado en `pedido_items.producto_nombre`, `producto_categoria`, `producto_imagen_url`

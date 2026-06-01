@@ -116,6 +116,7 @@ function AdminOrders({
                       <div>
                         <strong>{item.product.name}</strong>
                         <span>{item.product.category}</span>
+                        {item.variety && <small>{item.variety}</small>}
                       </div>
                       <span>{item.quantity} u.</span>
                       <span>{formatPrice(item.unitPrice)}</span>

@@ -14,6 +14,8 @@ import { DEFAULT_PRODUCT_IMAGE } from './data/products';
 import { hasSupabaseConfig, supabase } from './lib/supabase';
 
 const mercadoPagoPaymentLink = import.meta.env.VITE_MERCADO_PAGO_PAYMENT_LINK;
+const productSelect =
+  'id, nombre, categoria, categoria_id, precio, stock, imagen_url, imagenes_url, imagen_path, variedades, activo, categorias(id, nombre), producto_variantes(id, nombre, color, modelo, stock, activo)';
 
 const defaultCategoryNames = [
   'Accesorios',
@@ -31,17 +33,41 @@ const mapDatabaseCategory = (category) => ({
   active: category.activo !== false
 });
 
-const mapDatabaseProduct = (product) => ({
-  id: product.id,
-  name: product.nombre,
-  category: product.categorias?.nombre || product.categoria,
-  categoryId: product.categoria_id || product.categorias?.id || null,
-  price: Number(product.precio),
-  stock: Number(product.stock || 0),
-  image: product.imagen_url || DEFAULT_PRODUCT_IMAGE,
-  imagePath: product.imagen_path || null,
-  active: product.activo !== false
+const mapDatabaseVariant = (variant) => ({
+  id: variant.id,
+  name: variant.nombre || [variant.color, variant.modelo].filter(Boolean).join(' ') || '',
+  stock: Number(variant.stock || 0),
+  active: variant.activo !== false
 });
+
+const mapDatabaseProduct = (product) => {
+  const variants = (product.producto_variantes || [])
+    .map(mapDatabaseVariant)
+    .filter((variant) => variant.active);
+  const variantStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+  const generalStock = Number(product.stock || 0);
+  const varietiesFromVariants = [
+    ...new Set(variants.map((variant) => variant.name).filter(Boolean))
+  ];
+
+  return {
+    id: product.id,
+    name: product.nombre,
+    category: product.categorias?.nombre || product.categoria,
+    categoryId: product.categoria_id || product.categorias?.id || null,
+    price: Number(product.precio),
+    stock: generalStock,
+    availableStock: variants.length ? variantStock : generalStock,
+    image: product.imagen_url || DEFAULT_PRODUCT_IMAGE,
+    images: product.imagenes_url?.length
+      ? product.imagenes_url
+      : [product.imagen_url || DEFAULT_PRODUCT_IMAGE],
+    imagePath: product.imagen_path || null,
+    varieties: varietiesFromVariants.length ? varietiesFromVariants : product.variedades || [],
+    variants,
+    active: product.activo !== false
+  };
+};
 
 const mapProductToDatabase = (product) => ({
   nombre: product.name.trim(),
@@ -50,7 +76,9 @@ const mapProductToDatabase = (product) => ({
   precio: Number(product.price),
   stock: Number(product.stock || 0),
   imagen_url: product.imageUrl || null,
+  imagenes_url: product.imageUrls?.length ? product.imageUrls : null,
   imagen_path: product.imagePath || null,
+  variedades: product.varieties || [],
   activo: true
 });
 
@@ -74,6 +102,7 @@ const mapDatabaseOrder = (order) => ({
       item.subtotal === null || item.subtotal === undefined
         ? Number(item.cantidad || 0) * Number(item.precio_unitario || 0)
         : Number(item.subtotal || 0),
+    variety: item.variedad || item.modelo || item.color || '',
     product: {
       name: item.producto_nombre || item.productos?.nombre || 'Producto eliminado',
       category:
@@ -94,6 +123,39 @@ const sanitizeFileName = (fileName) =>
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
     .toLowerCase();
+
+const normalizeOptions = (value) =>
+  value
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const buildVariantPayload = ({ varieties, stock, variants = [] }) => {
+  if (variants.length) {
+    return variants.map((variant) => ({
+      nombre: variant.name || variant.nombre || null,
+      stock: Math.max(0, Number(variant.stock || 0))
+    }));
+  }
+
+  if (!varieties.length) return [];
+
+  const defaultStock = Math.max(0, Number(stock || 0));
+
+  return varieties.map((variety) => ({
+    nombre: variety,
+    stock: 0
+  }));
+};
+
+const getVariantStockTotal = (variants) =>
+  variants.reduce((sum, variant) => sum + Math.max(0, Number(variant.stock || 0)), 0);
+
+const getSelectedVariant = (product, variety) => {
+  if (!product.variants?.length) return null;
+
+  return product.variants.find((variant) => variant.name === variety);
+};
 
 function App() {
   const [catalogProducts, setCatalogProducts] = useState([]);
@@ -185,7 +247,7 @@ function App() {
             .order('nombre', { ascending: true }),
           supabase
             .from('productos')
-            .select('id, nombre, categoria, categoria_id, precio, stock, imagen_url, imagen_path, activo, categorias(id, nombre)')
+            .select(productSelect)
             .eq('activo', true)
             .order('nombre', { ascending: true })
         ]);
@@ -247,12 +309,18 @@ function App() {
   }, [catalogCategories.length, isAdmin]);
 
   const activeProducts = useMemo(
-    () => catalogProducts.filter((product) => product.active !== false && product.stock > 0),
+    () =>
+      catalogProducts.filter(
+        (product) => product.active !== false && (product.availableStock ?? product.stock) > 0
+      ),
     [catalogProducts]
   );
 
   const outOfStockProducts = useMemo(
-    () => catalogProducts.filter((product) => product.active !== false && product.stock <= 0),
+    () =>
+      catalogProducts.filter(
+        (product) => product.active !== false && (product.availableStock ?? product.stock) <= 0
+      ),
     [catalogProducts]
   );
 
@@ -295,7 +363,7 @@ function App() {
     const { data, error } = await supabase
       .from('pedidos')
       .select(
-        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
+        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, variedad, color, modelo, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
       )
       .order('fecha', { ascending: false });
 
@@ -322,7 +390,7 @@ function App() {
     const { data, error } = await supabase
       .from('pedidos')
       .select(
-        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
+        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, variedad, color, modelo, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
       )
       .eq('usuario_id', session.user.id)
       .order('fecha', { ascending: false });
@@ -411,6 +479,26 @@ function App() {
     };
   };
 
+  const uploadProductImages = async (files) => {
+    const fileList = Array.from(files || []).filter(Boolean);
+
+    if (fileList.length === 0) {
+      return { imageUrl: null, imageUrls: [], imagePath: null };
+    }
+
+    const uploadedImages = [];
+
+    for (const file of fileList) {
+      uploadedImages.push(await uploadProductImage(file));
+    }
+
+    return {
+      imageUrl: uploadedImages[0]?.imageUrl || null,
+      imageUrls: uploadedImages.map((image) => image.imageUrl).filter(Boolean),
+      imagePath: uploadedImages[0]?.imagePath || null
+    };
+  };
+
   const createProduct = async (product) => {
     setAdminMessage('');
 
@@ -428,31 +516,82 @@ function App() {
       return false;
     }
 
+    const varieties = normalizeOptions(product.varietiesText || '');
+    const variants = buildVariantPayload({
+      varieties,
+      stock: product.stock,
+      variants: product.variants
+    });
+    const variantStockTotal = getVariantStockTotal(variants);
+
+    if (variantStockTotal > Number(product.stock || 0)) {
+      setAdminMessage('La suma del stock de las variedades no puede superar el stock general.');
+      return false;
+    }
+
+    if (!window.confirm(`Confirmas que queres cargar el producto "${product.name}"?`)) {
+      return false;
+    }
+
     let uploadedImage;
 
     try {
-      uploadedImage = await uploadProductImage(product.photoFile);
+      uploadedImage = await uploadProductImages(product.photoFiles);
     } catch (error) {
       setAdminMessage(`No se pudo subir la imagen: ${error.message}`);
       return false;
     }
 
-    const { data, error } = await supabase
+    const { data: insertedProduct, error } = await supabase
       .from('productos')
       .insert(
         mapProductToDatabase({
           ...product,
           categoryName: selectedCategory.name,
           imageUrl: uploadedImage.imageUrl,
-          imagePath: uploadedImage.imagePath
+          imageUrls: uploadedImage.imageUrls,
+          imagePath: uploadedImage.imagePath,
+          varieties,
+          stock: product.stock
         })
       )
-      .select('id, nombre, categoria, categoria_id, precio, stock, imagen_url, imagen_path, activo, categorias(id, nombre)')
+      .select(productSelect)
       .single();
 
     if (error) {
       setAdminMessage(`No se pudo guardar el producto: ${error.message}`);
       return false;
+    }
+
+    let data = insertedProduct;
+
+    if (variants.length) {
+      const { error: variantsError } = await supabase
+        .from('producto_variantes')
+        .insert(
+          variants.map((variant) => ({
+            producto_id: insertedProduct.id,
+            nombre: variant.nombre,
+            stock: variant.stock,
+            activo: true
+          }))
+        );
+
+      if (variantsError) {
+        await supabase.rpc('eliminar_producto_admin', {
+          p_producto_id: insertedProduct.id
+        });
+        setAdminMessage(`No se pudo guardar el producto: ${variantsError.message}`);
+        return false;
+      }
+
+      const { data: productWithVariants } = await supabase
+        .from('productos')
+        .select(productSelect)
+        .eq('id', insertedProduct.id)
+        .single();
+
+      data = productWithVariants || insertedProduct;
     }
 
     setCatalogProducts((currentProducts) =>
@@ -481,14 +620,32 @@ function App() {
       return false;
     }
 
+    const varieties = normalizeOptions(product.varietiesText || '');
+    const variants = buildVariantPayload({
+      varieties,
+      stock: product.stock,
+      variants: product.variants
+    });
+    const variantStockTotal = getVariantStockTotal(variants);
+
+    if (variantStockTotal > Number(product.stock || 0)) {
+      setAdminMessage('La suma del stock de las variedades no puede superar el stock general.');
+      return false;
+    }
+
+    if (!window.confirm(`Confirmas que queres guardar los cambios de "${product.name}"?`)) {
+      return false;
+    }
+
     let uploadedImage = {
       imageUrl: product.currentImageUrl || null,
+      imageUrls: product.currentImageUrls || [],
       imagePath: product.currentImagePath || null
     };
 
-    if (product.photoFile) {
+    if (product.photoFiles?.length) {
       try {
-        uploadedImage = await uploadProductImage(product.photoFile);
+        uploadedImage = await uploadProductImages(product.photoFiles);
       } catch (error) {
         setAdminMessage(`No se pudo subir la imagen: ${error.message}`);
         return false;
@@ -503,7 +660,10 @@ function App() {
       p_precio: Number(product.price),
       p_stock: Number(product.stock || 0),
       p_imagen_url: uploadedImage.imageUrl,
-      p_imagen_path: uploadedImage.imagePath
+      p_imagenes_url: uploadedImage.imageUrls,
+      p_imagen_path: uploadedImage.imagePath,
+      p_variedades: varieties,
+      p_variantes: variants
     });
 
     if (error) {
@@ -511,7 +671,13 @@ function App() {
       return false;
     }
 
-    const updatedProduct = mapDatabaseProduct(data);
+    const { data: refreshedProduct } = await supabase
+      .from('productos')
+      .select(productSelect)
+      .eq('id', data.id)
+      .single();
+
+    const updatedProduct = mapDatabaseProduct(refreshedProduct || data);
 
     setCatalogProducts((currentProducts) =>
       currentProducts
@@ -529,7 +695,8 @@ function App() {
               ...item,
               name: updatedProduct.name,
               price: updatedProduct.price,
-              image: updatedProduct.image
+              image: updatedProduct.image,
+              images: updatedProduct.images
             }
           : item
       )
@@ -544,6 +711,10 @@ function App() {
 
     if (!hasSupabaseConfig) {
       setAdminMessage('Falta configurar Supabase para eliminar productos.');
+      return;
+    }
+
+    if (!window.confirm(`Confirmas que queres eliminar "${product.name}" del catalogo?`)) {
       return;
     }
 
@@ -568,17 +739,28 @@ function App() {
     setAdminMessage('Producto eliminado del catalogo.');
   };
 
-  const changeProductStock = (productId, delta) => {
+  const changeProductStock = (productId, delta, variantId = null) => {
     setCatalogProducts((currentProducts) =>
       currentProducts.map((product) =>
         product.id === productId
-          ? { ...product, stock: Math.max(0, product.stock + delta) }
+          ? {
+              ...product,
+              stock: Math.max(0, product.stock + delta),
+              availableStock: Math.max(0, (product.availableStock ?? product.stock) + delta),
+              variants: variantId
+                ? product.variants.map((variant) =>
+                    variant.id === variantId
+                      ? { ...variant, stock: Math.max(0, variant.stock + delta) }
+                      : variant
+                  )
+                : product.variants
+            }
           : product
       )
     );
   };
 
-  const addToCart = (product) => {
+  const addToCart = (product, options = {}) => {
     setCartMessage('');
 
     if (isAdmin) {
@@ -596,19 +778,25 @@ function App() {
       return;
     }
 
-    if (product.stock <= 0) {
+    const variety = options.variety || '';
+    const selectedVariant = getSelectedVariant(product, variety);
+    const availableStock = selectedVariant ? selectedVariant.stock : product.stock;
+
+    if (availableStock <= 0) {
       setCartMessage('No hay stock disponible para este producto.');
       setIsCartOpen(true);
       return;
     }
 
-    changeProductStock(product.id, -1);
+    changeProductStock(product.id, -1, selectedVariant?.id || null);
+    const variantKey = `${product.id}-${selectedVariant?.id || variety || 'sin-variedad'}`;
+
     setCartItems((currentItems) => {
-      const currentItem = currentItems.find((item) => item.id === product.id);
+      const currentItem = currentItems.find((item) => item.variantKey === variantKey);
 
       if (currentItem) {
         return currentItems.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.variantKey === variantKey ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
 
@@ -616,9 +804,12 @@ function App() {
         ...currentItems,
         {
           id: product.id,
+          variantId: selectedVariant?.id || null,
+          variantKey,
           name: product.name,
           price: product.price,
           image: product.image,
+          variety,
           quantity: 1
         }
       ];
@@ -626,45 +817,53 @@ function App() {
     setIsCartOpen(true);
   };
 
-  const increaseCartItem = (productId) => {
-    const product = catalogProducts.find((currentProduct) => currentProduct.id === productId);
+  const increaseCartItem = (variantKey) => {
+    const item = cartItems.find((currentItem) => currentItem.variantKey === variantKey);
+    const product = catalogProducts.find((currentProduct) => currentProduct.id === item?.id);
+    const selectedVariant = item?.variantId
+      ? product?.variants.find((variant) => variant.id === item.variantId)
+      : null;
+    const availableStock = selectedVariant ? selectedVariant.stock : product?.stock;
 
-    if (!product || product.stock <= 0) {
+    if (!product || availableStock <= 0) {
       setCartMessage('No hay mas stock disponible para este producto.');
       return;
     }
 
-    changeProductStock(productId, -1);
+    changeProductStock(product.id, -1, item.variantId);
     setCartItems((currentItems) =>
       currentItems.map((item) =>
-        item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
+        item.variantKey === variantKey ? { ...item, quantity: item.quantity + 1 } : item
       )
     );
   };
 
-  const decreaseCartItem = (productId) => {
+  const decreaseCartItem = (variantKey) => {
     setCartMessage('');
-    changeProductStock(productId, 1);
+    const itemToDecrease = cartItems.find((item) => item.variantKey === variantKey);
+    if (itemToDecrease) {
+      changeProductStock(itemToDecrease.id, 1, itemToDecrease.variantId);
+    }
     setCartItems((currentItems) =>
       currentItems
         .map((item) =>
-          item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
+          item.variantKey === variantKey ? { ...item, quantity: item.quantity - 1 } : item
         )
         .filter((item) => item.quantity > 0)
     );
   };
 
-  const removeCartItem = (productId) => {
-    const item = cartItems.find((currentItem) => currentItem.id === productId);
+  const removeCartItem = (variantKey) => {
+    const item = cartItems.find((currentItem) => currentItem.variantKey === variantKey);
     if (!item) return;
 
     setCartMessage('');
-    changeProductStock(productId, item.quantity);
-    setCartItems((currentItems) => currentItems.filter((currentItem) => currentItem.id !== productId));
+    changeProductStock(item.id, item.quantity, item.variantId);
+    setCartItems((currentItems) => currentItems.filter((currentItem) => currentItem.variantKey !== variantKey));
   };
 
   const clearCart = () => {
-    cartItems.forEach((item) => changeProductStock(item.id, item.quantity));
+    cartItems.forEach((item) => changeProductStock(item.id, item.quantity, item.variantId));
     setCartItems([]);
     setCartMessage('');
     setCheckoutMessage('');
@@ -704,7 +903,9 @@ function App() {
       p_medio_pago: paymentMethod,
       p_items: cartItems.map((item) => ({
         producto_id: item.id,
-        cantidad: item.quantity
+        variante_id: item.variantId,
+        cantidad: item.quantity,
+        variedad: item.variety || null
       }))
     });
 
@@ -848,7 +1049,7 @@ function App() {
       ) : currentView === 'catalog' ? (
         <ProductCatalog
           activeCategory={activeCategory}
-          canAddToCart={!isAdmin}
+          canAddToCart={Boolean(session) && !isAdmin}
           canManageProducts={isAdmin}
           products={filteredProducts}
           onAddToCart={addToCart}

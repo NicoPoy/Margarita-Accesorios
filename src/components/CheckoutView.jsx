@@ -81,9 +81,10 @@ function CheckoutView({
           <span>Resumen</span>
           <div className="checkout-summary-items">
             {cartItems.map((item) => (
-              <div key={item.id}>
+              <div key={item.variantKey}>
                 <span>
                   {item.quantity} x {item.name}
+                  {item.variety && ` (${item.variety})`}
                 </span>
                 <strong>{formatPrice(item.price * item.quantity)}</strong>
               </div>

@@ -47,18 +47,23 @@ function CartDrawer({
           <>
             <div className="cart-items">
               {cartItems.map((item) => (
-                <article className="cart-item" key={item.id}>
+                <article className="cart-item" key={item.variantKey}>
                   <img src={item.image} alt="" aria-hidden="true" />
                   <div>
                     <h3>{item.name}</h3>
+                    {item.variety && (
+                      <p className="cart-item-options">
+                        {item.variety}
+                      </p>
+                    )}
                     <span>{formatPrice(item.price)}</span>
                     <div className="cart-quantity" aria-label={`Cantidad de ${item.name}`}>
-                      <button type="button" onClick={() => onDecrease(item.id)}>-</button>
+                      <button type="button" onClick={() => onDecrease(item.variantKey)}>-</button>
                       <strong>{item.quantity}</strong>
-                      <button type="button" onClick={() => onIncrease(item.id)}>+</button>
+                      <button type="button" onClick={() => onIncrease(item.variantKey)}>+</button>
                     </div>
                   </div>
-                  <button className="cart-remove" type="button" onClick={() => onRemove(item.id)}>
+                  <button className="cart-remove" type="button" onClick={() => onRemove(item.variantKey)}>
                     Quitar
                   </button>
                 </article>
