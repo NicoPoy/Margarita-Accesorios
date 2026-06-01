@@ -6,8 +6,10 @@ function TopActions({
   currentView,
   displayName,
   isAdmin,
+  isClient,
   onAdminViewChange,
   onCartOpen,
+  onClientViewChange,
   onLoginOpen,
   onLogout,
   session
@@ -32,6 +34,24 @@ function TopActions({
                 onClick={() => onAdminViewChange('orders')}
               >
                 Pedidos
+              </button>
+            </div>
+          )}
+          {!isAdmin && isClient && (
+            <div className="admin-top-nav" aria-label="Navegacion usuario">
+              <button
+                className={currentView === 'catalog' ? 'is-active' : ''}
+                type="button"
+                onClick={() => onClientViewChange('catalog')}
+              >
+                Catalogo
+              </button>
+              <button
+                className={currentView === 'my-orders' ? 'is-active' : ''}
+                type="button"
+                onClick={() => onClientViewChange('my-orders')}
+              >
+                Mis pedidos
               </button>
             </div>
           )}

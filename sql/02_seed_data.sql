@@ -13,6 +13,7 @@ values
   ('Anillos', true),
   ('Aros', true),
   ('Belleza', true),
+  ('Collares', true),
   ('Hebillas', true),
   ('Pulseras', true)
 on conflict (nombre) do update

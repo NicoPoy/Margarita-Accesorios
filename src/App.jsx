@@ -15,6 +15,16 @@ import { hasSupabaseConfig, supabase } from './lib/supabase';
 
 const mercadoPagoPaymentLink = import.meta.env.VITE_MERCADO_PAGO_PAYMENT_LINK;
 
+const defaultCategoryNames = [
+  'Accesorios',
+  'Anillos',
+  'Aros',
+  'Belleza',
+  'Collares',
+  'Hebillas',
+  'Pulseras'
+];
+
 const mapDatabaseCategory = (category) => ({
   id: category.id,
   name: category.nombre,
@@ -65,12 +75,13 @@ const mapDatabaseOrder = (order) => ({
         ? Number(item.cantidad || 0) * Number(item.precio_unitario || 0)
         : Number(item.subtotal || 0),
     product: {
-      name: item.productos?.nombre || 'Producto eliminado',
+      name: item.producto_nombre || item.productos?.nombre || 'Producto eliminado',
       category:
+        item.producto_categoria ||
         item.productos?.categorias?.nombre ||
         item.productos?.categoria ||
         'Sin categoria',
-      image: item.productos?.imagen_url || DEFAULT_PRODUCT_IMAGE
+      image: item.producto_imagen_url || item.productos?.imagen_url || DEFAULT_PRODUCT_IMAGE
     }
   }))
 });
@@ -104,6 +115,7 @@ function App() {
   const [adminMessage, setAdminMessage] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
   const [adminOrders, setAdminOrders] = useState([]);
+  const [userOrders, setUserOrders] = useState([]);
   const [ordersStatus, setOrdersStatus] = useState('');
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
@@ -180,6 +192,10 @@ function App() {
 
       if (!categoriesError) {
         setCatalogCategories((categoriesData || []).map(mapDatabaseCategory));
+      } else {
+        setProductsStatus(
+          `No se pudieron cargar las categorias desde Supabase: ${categoriesError.message}`
+        );
       }
 
       if (error) {
@@ -195,6 +211,40 @@ function App() {
 
     loadCatalogData();
   }, []);
+
+  useEffect(() => {
+    const seedDefaultCategories = async () => {
+      if (!hasSupabaseConfig || !isAdmin || catalogCategories.length > 0) return;
+
+      const { data: existingCategories, error: readError } = await supabase
+        .from('categorias')
+        .select('id')
+        .limit(1);
+
+      if (readError || existingCategories?.length) return;
+
+      const { data, error } = await supabase
+        .from('categorias')
+        .upsert(
+          defaultCategoryNames.map((name) => ({ nombre: name, activo: true })),
+          { onConflict: 'nombre' }
+        )
+        .select('id, nombre, activo')
+        .order('nombre', { ascending: true });
+
+      if (error) {
+        setProductsStatus(
+          `No se pudieron crear las categorias base: ${error.message}`
+        );
+        return;
+      }
+
+      setCatalogCategories((data || []).map(mapDatabaseCategory));
+      setProductsStatus('');
+    };
+
+    seedDefaultCategories();
+  }, [catalogCategories.length, isAdmin]);
 
   const activeProducts = useMemo(
     () => catalogProducts.filter((product) => product.active !== false && product.stock > 0),
@@ -245,7 +295,7 @@ function App() {
     const { data, error } = await supabase
       .from('pedidos')
       .select(
-        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, productos(nombre, categoria, imagen_url, categorias(nombre)))'
+        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
       )
       .order('fecha', { ascending: false });
 
@@ -259,11 +309,45 @@ function App() {
     setAdminOrders((data || []).map(mapDatabaseOrder));
   };
 
+  const loadUserOrders = async () => {
+    setOrdersStatus('');
+
+    if (!hasSupabaseConfig || !session?.user?.id) {
+      setOrdersStatus('Tenes que iniciar sesion para ver tus pedidos.');
+      return;
+    }
+
+    setIsLoadingOrders(true);
+
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select(
+        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
+      )
+      .eq('usuario_id', session.user.id)
+      .order('fecha', { ascending: false });
+
+    setIsLoadingOrders(false);
+
+    if (error) {
+      setOrdersStatus(`No se pudieron cargar tus pedidos: ${error.message}`);
+      return;
+    }
+
+    setUserOrders((data || []).map(mapDatabaseOrder));
+  };
+
   useEffect(() => {
     if (isAdmin && currentView === 'orders') {
       loadAdminOrders();
     }
   }, [currentView, isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin && isClient && currentView === 'my-orders') {
+      loadUserOrders();
+    }
+  }, [currentView, isAdmin, isClient, session?.user?.id]);
 
   const openAuth = (mode) => {
     setAuthMode(mode);
@@ -287,6 +371,13 @@ function App() {
     setCurrentView(view);
     setEditingProduct(null);
     setCheckoutMessage('');
+    setOrdersStatus('');
+  };
+
+  const openClientView = (view) => {
+    setCurrentView(view);
+    setCheckoutMessage('');
+    setOrdersStatus('');
   };
 
   const uploadProductImage = async (file) => {
@@ -626,7 +717,7 @@ function App() {
 
     setCartItems([]);
     setCheckoutMessage(`Pedido #${data?.pedido_id || ''} finalizado correctamente.`);
-    setCurrentView('catalog');
+    setCurrentView('my-orders');
   };
 
   const markOrderDelivered = async (orderId) => {
@@ -659,15 +750,46 @@ function App() {
     );
   };
 
+  const confirmOrderPaymentReceived = async (orderId) => {
+    setOrdersStatus('');
+
+    if (!hasSupabaseConfig) {
+      setOrdersStatus('Falta configurar Supabase para actualizar pedidos.');
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('confirmar_comprobante_admin', {
+      p_pedido_id: orderId
+    });
+
+    if (error) {
+      setOrdersStatus(`No se pudo confirmar el comprobante: ${error.message}`);
+      return;
+    }
+
+    setAdminOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              paymentStatus: data?.pago_estado || 'comprobante_recibido'
+            }
+          : order
+      )
+    );
+  };
+
   return (
     <main className="page-shell">
       <TopActions
         cartCount={cartCount}
         displayName={displayName}
         isAdmin={isAdmin}
+        isClient={isClient}
         currentView={currentView}
         onAdminViewChange={openAdminView}
         onCartOpen={() => setIsCartOpen(true)}
+        onClientViewChange={openClientView}
         onLoginOpen={() => openAuth('login')}
         onLogout={handleLogout}
         session={session}
@@ -709,7 +831,19 @@ function App() {
           message={ordersStatus}
           orders={adminOrders}
           onMarkDelivered={markOrderDelivered}
+          onPaymentReceived={confirmOrderPaymentReceived}
           onRefresh={loadAdminOrders}
+        />
+      ) : currentView === 'my-orders' && !isAdmin ? (
+        <AdminOrders
+          badge="Historial"
+          emptyText="Todavia no realizaste pedidos."
+          isLoading={isLoadingOrders}
+          message={ordersStatus}
+          orders={userOrders}
+          showCustomer={false}
+          title="Mis pedidos"
+          onRefresh={loadUserOrders}
         />
       ) : currentView === 'catalog' ? (
         <ProductCatalog

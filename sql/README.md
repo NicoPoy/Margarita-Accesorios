@@ -29,6 +29,8 @@ Ejecutar en este orden:
 - `12_normalize_order_model.sql`: ajusta tipos si `pago_estado` quedo bool o importaste columnas como float8.
 - `13_order_functions_complete.sql`: repara las funciones de pedidos si Supabase dice que no encuentra `crear_pedido_con_items`.
 - `14_create_order_rpc_only.sql`: version corta para crear solo las funciones RPC de pedidos.
+- `15_seed_categories.sql`: inserta/reactiva categorias base si el selector aparece vacio.
+- `16_order_item_product_snapshot.sql`: guarda nombre/categoria/imagen del producto dentro del pedido y agrega confirmacion de comprobante.
 
 ## Modelo incluido
 
