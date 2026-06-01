@@ -337,9 +337,8 @@ function AdminPanel({
           </div>
 
           <div className="admin-field">
-            <span>Fotos del producto</span>
-            <div className="admin-file-field">
-              <div>
+            <div className="admin-field-header">
+              <span>Fotos del producto</span>
                 <label className="photo-upload-button">
                   <input
                     type="file"
@@ -352,12 +351,14 @@ function AdminPanel({
                   />
                   <span>Agregar fotos</span>
                 </label>
+            </div>
+
+            <div className="admin-file-field">
                 <small>
                   {isEditing
                     ? 'Opcional. Podes sumar fotos nuevas sin perder las actuales.'
                     : 'Opcional. Podes cargar una o varias fotos de a poco; si no cargas, se usa la imagen generica.'}
                 </small>
-              </div>
               <div className="admin-photo-preview-grid">
                 {displayedPhotoPreviews.map((preview, index) => {
                   const selectedIndex = isEditing ? index - currentPhotoPreviews.length : index;

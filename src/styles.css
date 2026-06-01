@@ -902,6 +902,20 @@ h1 {
   text-transform: uppercase;
 }
 
+.admin-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-field-header > span {
+  color: var(--rose-700);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .admin-form input,
 .admin-form select,
 .admin-form textarea {
@@ -951,28 +965,28 @@ h1 {
   background: transparent;
 }
 
-.photo-upload-button {
+.admin-form .photo-upload-button {
   display: inline-flex;
   width: fit-content;
   align-items: center;
   justify-content: center;
   min-height: 42px;
-  border: 1px solid rgba(216, 101, 136, 0.28);
+  border: 1px solid rgba(139, 38, 53, 0.18);
   border-radius: 999px;
   padding: 0 18px;
-  background: var(--rose-500);
+  background: #8b2635;
   color: #fff;
-  box-shadow: 0 10px 22px rgba(216, 101, 136, 0.16);
+  box-shadow: 0 10px 22px rgba(139, 38, 53, 0.18);
   cursor: pointer;
   transition: 160ms ease;
 }
 
-.photo-upload-button:hover {
-  background: var(--rose-700);
+.admin-form .photo-upload-button:hover {
+  background: #6f1f31;
   transform: translateY(-1px);
 }
 
-.photo-upload-button input {
+.admin-form .photo-upload-button input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -981,8 +995,8 @@ h1 {
   white-space: nowrap;
 }
 
-.photo-upload-button span {
-  color: inherit;
+.admin-form .photo-upload-button > span {
+  color: #fff;
   font-size: 0.9rem;
   font-weight: 900;
   text-transform: none;
@@ -1069,6 +1083,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  justify-content: flex-end;
 }
 
 .admin-submit,
@@ -1082,9 +1097,14 @@ h1 {
 
 .admin-submit {
   border: 0;
-  background: var(--rose-500);
+  background: #3f9f73;
   color: #fff;
-  box-shadow: 0 12px 24px rgba(216, 101, 136, 0.2);
+  box-shadow: 0 12px 24px rgba(63, 159, 115, 0.22);
+}
+
+.admin-submit:hover:not(:disabled) {
+  background: #317f5c;
+  transform: translateY(-1px);
 }
 
 .admin-cancel-button {
