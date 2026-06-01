@@ -1130,15 +1130,17 @@ h1 {
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 280px));
+  align-items: stretch;
   gap: 14px;
   justify-content: start;
 }
 
 .product-card {
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: 164px 72px 74px auto auto;
   gap: 12px;
-  min-height: 410px;
+  min-height: 392px;
+  height: 100%;
   width: 100%;
   padding: 16px;
   border: 1px solid var(--line);
@@ -1148,11 +1150,12 @@ h1 {
 }
 
 .product-image {
-  aspect-ratio: 1;
+  width: 100%;
+  height: 164px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--rose-100);
+  background: rgba(255, 249, 251, 0.92);
 }
 
 .product-image button {
@@ -1168,7 +1171,8 @@ h1 {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  padding: 8px;
+  object-fit: contain;
 }
 
 .product-detail-backdrop {
@@ -1221,8 +1225,9 @@ h1 {
   aspect-ratio: 1;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--rose-100);
-  object-fit: cover;
+  background: rgba(255, 249, 251, 0.92);
+  object-fit: contain;
+  padding: 12px;
 }
 
 .product-detail-gallery > div {
@@ -1250,7 +1255,8 @@ h1 {
 .product-detail-gallery button img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  padding: 4px;
+  object-fit: contain;
 }
 
 .product-detail-info {
@@ -1284,6 +1290,7 @@ h1 {
 
 .product-info {
   min-width: 0;
+  align-self: start;
 }
 
 .product-info p {
@@ -1296,14 +1303,24 @@ h1 {
 }
 
 .product-info h3 {
+  display: -webkit-box;
+  min-height: 2.72em;
+  overflow: hidden;
   color: var(--ink);
   font-size: 1.08rem;
   line-height: 1.26;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .product-options {
   display: grid;
+  align-content: start;
   gap: 8px;
+}
+
+.product-options-placeholder {
+  min-height: 68px;
 }
 
 .product-options label {
@@ -1973,6 +1990,77 @@ h1 {
   .payment-banner img {
     min-height: 230px;
     object-fit: cover;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    justify-content: stretch;
+  }
+
+  .product-card {
+    grid-template-rows: clamp(118px, 36vw, 164px) 64px 58px auto auto;
+    min-height: 336px;
+    padding: 10px;
+    gap: 9px;
+  }
+
+  .product-image {
+    height: clamp(118px, 36vw, 164px);
+  }
+
+  .product-image img {
+    padding: 6px;
+  }
+
+  .product-info p {
+    margin-bottom: 5px;
+    font-size: 0.66rem;
+  }
+
+  .product-info h3 {
+    font-size: 0.92rem;
+  }
+
+  .product-options-placeholder {
+    min-height: 52px;
+  }
+
+  .product-options span {
+    font-size: 0.62rem;
+  }
+
+  .product-options select {
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 0.8rem;
+  }
+
+  .product-price {
+    align-items: start;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 9px;
+  }
+
+  .product-price strong {
+    font-size: 1.12rem;
+  }
+
+  .product-price span {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  .add-cart-button,
+  .edit-product-button,
+  .delete-product-button {
+    min-height: 34px;
+    font-size: 0.78rem;
+  }
+
+  .product-manage-actions {
+    gap: 6px;
   }
 
   .checkout-layout {

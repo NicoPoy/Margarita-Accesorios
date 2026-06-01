@@ -59,6 +59,7 @@ function ProductCard({
           </label>
         </div>
       )}
+      {!hasVarieties && <div className="product-options product-options-placeholder" aria-hidden="true" />}
 
       <div className="product-price">
         <strong>{formatPrice(product.price)}</strong>
