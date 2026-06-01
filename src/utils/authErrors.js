@@ -21,5 +21,9 @@ export const getAuthErrorMessage = (error) => {
     return 'Ese DNI ya esta registrado.';
   }
 
+  if (message.includes('database error saving new user')) {
+    return 'No se pudo crear el usuario. Puede que el email o el DNI ya esten registrados.';
+  }
+
   return error?.message || 'No se pudo completar la operacion.';
 };

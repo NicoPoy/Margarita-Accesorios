@@ -71,7 +71,7 @@ function CartDrawer({
                 <strong>{formatPrice(total)}</strong>
               </div>
               <button type="button" className="cart-checkout" onClick={onCheckout}>
-                Finalizar pedido
+                Ir a pagar
               </button>
               <button type="button" className="cart-clear" onClick={onClear}>
                 Vaciar carrito

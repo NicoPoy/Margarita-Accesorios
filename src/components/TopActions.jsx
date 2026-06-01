@@ -4,6 +4,7 @@ import { CartIcon } from './icons';
 function TopActions({
   cartCount,
   displayName,
+  isAdmin,
   onCartOpen,
   onLoginOpen,
   onLogout,
@@ -14,11 +15,13 @@ function TopActions({
       {session ? (
         <div className="session-actions">
           <span>Hola, {displayName}</span>
-          <button className="cart-button" type="button" onClick={onCartOpen}>
-            <CartIcon />
-            <span>Carrito</span>
-            {cartCount > 0 && <strong>{cartCount}</strong>}
-          </button>
+          {!isAdmin && (
+            <button className="cart-button" type="button" onClick={onCartOpen}>
+              <CartIcon />
+              <span>Carrito</span>
+              {cartCount > 0 && <strong>{cartCount}</strong>}
+            </button>
+          )}
           <button className="login-button" type="button" onClick={onLogout}>
             Cerrar sesion
           </button>

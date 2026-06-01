@@ -1,16 +1,63 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import CartDrawer from './components/CartDrawer';
+import CheckoutView from './components/CheckoutView';
 import Header from './components/Header';
+import PaymentBanner from './components/PaymentBanner';
 import ProductCatalog from './components/ProductCatalog';
 import SiteFooter from './components/SiteFooter';
 import Toolbar from './components/Toolbar';
 import TopActions from './components/TopActions';
-import { initialProducts } from './data/products';
+import { DEFAULT_PRODUCT_IMAGE, initialProducts } from './data/products';
 import { hasSupabaseConfig, supabase } from './lib/supabase';
+
+const mercadoPagoPaymentLink = import.meta.env.VITE_MERCADO_PAGO_PAYMENT_LINK;
+
+const fallbackCategories = [...new Set(initialProducts.map((product) => product.category))]
+  .sort((a, b) => a.localeCompare(b))
+  .map((name, index) => ({ id: `local-${index + 1}`, name, active: true }));
+
+const mapDatabaseCategory = (category) => ({
+  id: category.id,
+  name: category.nombre,
+  active: category.activo !== false
+});
+
+const mapDatabaseProduct = (product) => ({
+  id: product.id,
+  name: product.nombre,
+  category: product.categorias?.nombre || product.categoria,
+  categoryId: product.categoria_id || product.categorias?.id || null,
+  price: Number(product.precio),
+  stock: Number(product.stock || 0),
+  image: product.imagen_url || DEFAULT_PRODUCT_IMAGE,
+  active: product.activo !== false
+});
+
+const mapProductToDatabase = (product) => ({
+  nombre: product.name.trim(),
+  categoria_id: product.categoryId,
+  categoria: product.categoryName.trim(),
+  precio: Number(product.price),
+  stock: Number(product.stock || 0),
+  imagen_url: product.imageUrl || null,
+  imagen_path: product.imagePath || null,
+  activo: true
+});
+
+const sanitizeFileName = (fileName) =>
+  fileName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9.]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
 
 function App() {
   const [catalogProducts, setCatalogProducts] = useState(initialProducts);
+  const [catalogCategories, setCatalogCategories] = useState(fallbackCategories);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [query, setQuery] = useState('');
   const [authMode, setAuthMode] = useState('login');
@@ -21,9 +68,15 @@ function App() {
   const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartMessage, setCartMessage] = useState('');
+  const [checkoutMessage, setCheckoutMessage] = useState('');
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [currentView, setCurrentView] = useState('catalog');
+  const [productsStatus, setProductsStatus] = useState('');
+  const [adminMessage, setAdminMessage] = useState('');
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const isClient = userRoles.includes('cliente');
+  const isAdmin = userRoles.includes('admin');
   const displayName =
     profile?.nombre || session?.user?.user_metadata?.nombre || 'usuario';
 
@@ -71,22 +124,67 @@ function App() {
     loadProfile();
   }, [session]);
 
+  useEffect(() => {
+    const loadCatalogData = async () => {
+      if (!hasSupabaseConfig) return;
+
+      const [{ data: categoriesData, error: categoriesError }, { data, error }] =
+        await Promise.all([
+          supabase
+            .from('categorias')
+            .select('id, nombre, activo')
+            .eq('activo', true)
+            .order('nombre', { ascending: true }),
+          supabase
+            .from('productos')
+            .select('id, nombre, categoria, categoria_id, precio, stock, imagen_url, activo, categorias(id, nombre)')
+            .eq('activo', true)
+            .order('nombre', { ascending: true })
+        ]);
+
+      if (!categoriesError) {
+        setCatalogCategories((categoriesData || []).map(mapDatabaseCategory));
+      }
+
+      if (error) {
+        setProductsStatus(
+          'No se pudieron cargar los productos desde Supabase. Se muestra el catalogo local.'
+        );
+        return;
+      }
+
+      setCatalogProducts((data || []).map(mapDatabaseProduct));
+      setProductsStatus('');
+    };
+
+    loadCatalogData();
+  }, []);
+
+  const activeProducts = useMemo(
+    () => catalogProducts.filter((product) => product.active !== false && product.stock > 0),
+    [catalogProducts]
+  );
+
+  const outOfStockProducts = useMemo(
+    () => catalogProducts.filter((product) => product.active !== false && product.stock <= 0),
+    [catalogProducts]
+  );
+
   const categories = useMemo(
     () => [
       'Todos',
-      ...new Set(
-        catalogProducts
-          .map((product) => product.category)
-          .sort((a, b) => a.localeCompare(b))
-      )
+      ...catalogCategories
+        .filter((category) => category.active !== false)
+        .map((category) => category.name)
+        .sort((a, b) => a.localeCompare(b))
     ],
-    [catalogProducts]
+    [catalogCategories]
   );
 
   const filteredProducts = useMemo(() => {
     const search = query.trim().toLowerCase();
 
-    return catalogProducts.filter((product) => {
+    return activeProducts.filter((product) => {
       const matchesCategory =
         activeCategory === 'Todos' || product.category === activeCategory;
       const matchesSearch =
@@ -96,7 +194,7 @@ function App() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, catalogProducts, query]);
+  }, [activeCategory, activeProducts, query]);
 
   const openAuth = (mode) => {
     setAuthMode(mode);
@@ -113,6 +211,98 @@ function App() {
     setUserRoles([]);
     setCartItems([]);
     setIsCartOpen(false);
+    setCurrentView('catalog');
+  };
+
+  const uploadProductImage = async (file) => {
+    if (!file) {
+      return { imageUrl: null, imagePath: null };
+    }
+
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const safeName = sanitizeFileName(file.name.replace(/\.[^/.]+$/, '')) || 'producto';
+    const imagePath = `productos/${crypto.randomUUID()}-${safeName}.${fileExtension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(imagePath, file, {
+        cacheControl: '3600',
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
+
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(imagePath);
+
+    return {
+      imageUrl: data.publicUrl,
+      imagePath
+    };
+  };
+
+  const createProduct = async (product) => {
+    setAdminMessage('');
+
+    if (!hasSupabaseConfig) {
+      setAdminMessage('Falta configurar Supabase para guardar productos.');
+      return false;
+    }
+
+    const selectedCategory = catalogCategories.find(
+      (category) => String(category.id) === String(product.categoryId)
+    );
+
+    if (!selectedCategory) {
+      setAdminMessage('Selecciona una categoria valida desde la base de datos.');
+      return false;
+    }
+
+    if (String(selectedCategory.id).startsWith('local-')) {
+      setAdminMessage(
+        'Las categorias todavia son locales. Ejecuta el SQL actualizado en Supabase antes de crear productos.'
+      );
+      return false;
+    }
+
+    let uploadedImage;
+
+    try {
+      uploadedImage = await uploadProductImage(product.photoFile);
+    } catch (error) {
+      setAdminMessage(`No se pudo subir la imagen: ${error.message}`);
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('productos')
+      .insert(
+        mapProductToDatabase({
+          ...product,
+          categoryName: selectedCategory.name,
+          imageUrl: uploadedImage.imageUrl,
+          imagePath: uploadedImage.imagePath
+        })
+      )
+      .select('id, nombre, categoria, categoria_id, precio, stock, imagen_url, activo, categorias(id, nombre)')
+      .single();
+
+    if (error) {
+      setAdminMessage(`No se pudo guardar el producto: ${error.message}`);
+      return false;
+    }
+
+    setCatalogProducts((currentProducts) =>
+      [...currentProducts, mapDatabaseProduct(data)].sort((a, b) =>
+        `${a.category} ${a.name}`.localeCompare(`${b.category} ${b.name}`)
+      )
+    );
+    setAdminMessage('Producto guardado en Supabase.');
+    return true;
   };
 
   const changeProductStock = (productId, delta) => {
@@ -127,6 +317,10 @@ function App() {
 
   const addToCart = (product) => {
     setCartMessage('');
+
+    if (isAdmin) {
+      return;
+    }
 
     if (!session) {
       openAuth('login');
@@ -210,12 +404,57 @@ function App() {
     cartItems.forEach((item) => changeProductStock(item.id, item.quantity));
     setCartItems([]);
     setCartMessage('');
+    setCheckoutMessage('');
   };
 
   const checkoutCart = () => {
-    setCartMessage(
-      'Pedido listo para preparar. El guardado definitivo se activara cuando el catalogo lea productos desde Supabase.'
-    );
+    if (cartItems.length === 0) return;
+
+    setIsCartOpen(false);
+    setCheckoutMessage('');
+    setCurrentView('checkout');
+  };
+
+  const finishOrder = async (paymentMethod) => {
+    setCheckoutMessage('');
+
+    if (paymentMethod === 'mercado_pago') {
+      if (!mercadoPagoPaymentLink) {
+        setCheckoutMessage(
+          'Falta configurar el link de Mercado Pago. Agrega VITE_MERCADO_PAGO_PAYMENT_LINK en .env.local.'
+        );
+        return;
+      }
+
+      window.location.href = mercadoPagoPaymentLink;
+      return;
+    }
+
+    if (!hasSupabaseConfig || !session?.user?.id) {
+      setCheckoutMessage('Para finalizar el pedido tenes que iniciar sesion.');
+      return;
+    }
+
+    setIsSubmittingOrder(true);
+
+    const { data, error } = await supabase.rpc('crear_pedido_con_items', {
+      p_medio_pago: paymentMethod,
+      p_items: cartItems.map((item) => ({
+        producto_id: item.id,
+        cantidad: item.quantity
+      }))
+    });
+
+    setIsSubmittingOrder(false);
+
+    if (error) {
+      setCheckoutMessage(`No se pudo finalizar el pedido: ${error.message}`);
+      return;
+    }
+
+    setCartItems([]);
+    setCheckoutMessage(`Pedido #${data?.pedido_id || ''} finalizado correctamente.`);
+    setCurrentView('catalog');
   };
 
   return (
@@ -223,6 +462,7 @@ function App() {
       <TopActions
         cartCount={cartCount}
         displayName={displayName}
+        isAdmin={isAdmin}
         onCartOpen={() => setIsCartOpen(true)}
         onLoginOpen={() => openAuth('login')}
         onLogout={handleLogout}
@@ -231,19 +471,47 @@ function App() {
 
       <Header />
 
-      <Toolbar
-        activeCategory={activeCategory}
-        categories={categories}
-        query={query}
-        onCategoryChange={setActiveCategory}
-        onQueryChange={setQuery}
-      />
+      {currentView === 'catalog' && (
+        <>
+          <Toolbar
+            activeCategory={activeCategory}
+            categories={categories}
+            query={query}
+            onCategoryChange={setActiveCategory}
+            onQueryChange={setQuery}
+          />
 
-      <ProductCatalog
-        activeCategory={activeCategory}
-        products={filteredProducts}
-        onAddToCart={addToCart}
-      />
+          {productsStatus && <p className="catalog-status">{productsStatus}</p>}
+        </>
+      )}
+
+      {currentView === 'catalog' && isAdmin && (
+        <AdminPanel
+          categories={catalogCategories}
+          message={adminMessage}
+          outOfStockProducts={outOfStockProducts}
+          onCreateProduct={createProduct}
+        />
+      )}
+
+      {currentView === 'catalog' ? (
+        <ProductCatalog
+          activeCategory={activeCategory}
+          canAddToCart={!isAdmin}
+          products={filteredProducts}
+          onAddToCart={addToCart}
+        />
+      ) : (
+        <CheckoutView
+          cartItems={cartItems}
+          checkoutMessage={checkoutMessage}
+          isSubmitting={isSubmittingOrder}
+          onBack={() => setCurrentView('catalog')}
+          onFinishOrder={finishOrder}
+        />
+      )}
+
+      {!isAdmin && currentView === 'catalog' && <PaymentBanner />}
 
       <SiteFooter />
 
@@ -256,18 +524,20 @@ function App() {
         />
       )}
 
-      <CartDrawer
-        cartItems={cartItems}
-        cartMessage={cartMessage}
-        isClient={isClient}
-        isOpen={isCartOpen}
-        onCheckout={checkoutCart}
-        onClose={() => setIsCartOpen(false)}
-        onDecrease={decreaseCartItem}
-        onIncrease={increaseCartItem}
-        onRemove={removeCartItem}
-        onClear={clearCart}
-      />
+      {!isAdmin && (
+        <CartDrawer
+          cartItems={cartItems}
+          cartMessage={cartMessage}
+          isClient={isClient}
+          isOpen={isCartOpen}
+          onCheckout={checkoutCart}
+          onClose={() => setIsCartOpen(false)}
+          onDecrease={decreaseCartItem}
+          onIncrease={increaseCartItem}
+          onRemove={removeCartItem}
+          onClear={clearCart}
+        />
+      )}
     </main>
   );
 }
