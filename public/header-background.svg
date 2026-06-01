@@ -1,0 +1,70 @@
+<svg width="2048" height="684" viewBox="0 0 2048 684" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <rect width="2048" height="684" fill="#FFF1F5"/>
+  <rect width="2048" height="684" fill="url(#softGlow)"/>
+  <path d="M0 0H586C549 74 486 113 397 131C287 154 209 203 159 282C112 357 68 401 0 428V0Z" fill="#F7B7C3" fill-opacity="0.62"/>
+  <path d="M0 0H487C440 70 352 90 246 95C127 101 58 141 0 205V0Z" fill="#F4A8B8" fill-opacity="0.34"/>
+  <path d="M1696 0H2048V684H1516L1696 0Z" fill="#F7B7C3" fill-opacity="0.42"/>
+  <path d="M2048 376V684H1329C1418 632 1488 618 1547 630C1641 649 1716 609 1771 527C1836 430 1924 385 2048 376Z" fill="#F4A8B8" fill-opacity="0.48"/>
+  <path d="M2048 67C1970 49 1899 58 1835 94C1786 122 1740 137 1696 139" stroke="#E89BAE" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+  <path d="M1836 95C1867 65 1905 66 1943 97C1899 124 1866 123 1836 95Z" fill="#F2A8B8" opacity="0.6"/>
+  <path d="M1886 72C1926 47 1968 62 1996 107C1946 119 1912 108 1886 72Z" fill="#F2A8B8" opacity="0.55"/>
+  <path d="M1746 137C1779 105 1818 105 1856 138C1811 163 1778 163 1746 137Z" fill="#F2A8B8" opacity="0.52"/>
+  <path d="M75 684C101 571 151 490 226 443" stroke="#E89BAE" stroke-width="4" stroke-linecap="round" opacity="0.46"/>
+  <path d="M133 598C95 576 89 536 116 491C151 529 157 562 133 598Z" fill="#F2A8B8" opacity="0.55"/>
+  <path d="M177 533C135 518 121 479 141 430C183 462 195 496 177 533Z" fill="#F2A8B8" opacity="0.55"/>
+  <path d="M49 657C15 635 13 599 38 558C68 593 72 625 49 657Z" fill="#F2A8B8" opacity="0.48"/>
+  <path d="M0 342C149 290 249 296 354 339C430 370 492 368 552 322" stroke="#9B3153" stroke-width="4" stroke-linecap="round" opacity="0.58"/>
+  <path d="M1970 393C1834 396 1763 452 1712 534C1661 616 1595 648 1495 628C1425 614 1368 632 1316 684" stroke="#9B3153" stroke-width="4" stroke-linecap="round" opacity="0.58"/>
+  <path d="M9 233C93 189 181 181 275 213C355 240 438 222 518 159C580 110 632 52 675 0" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
+  <path d="M1530 666C1630 644 1732 641 1837 663C1923 681 1993 665 2048 611" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.56"/>
+  <path d="M1710 430L1721 461L1752 472L1721 483L1710 514L1699 483L1668 472L1699 461L1710 430Z" fill="white" opacity="0.86"/>
+  <path d="M1892 540L1903 571L1934 582L1903 593L1892 624L1881 593L1850 582L1881 571L1892 540Z" fill="#9B3153" opacity="0.55"/>
+  <path d="M277 473L285 495L307 503L285 511L277 533L269 511L247 503L269 495L277 473Z" fill="#C55B75" opacity="0.45"/>
+  <path d="M48 233L56 255L78 263L56 271L48 293L40 271L18 263L40 255L48 233Z" fill="white" opacity="0.74"/>
+  <g opacity="0.22">
+    <path d="M19 684L703 0" stroke="#E89BAE"/>
+    <path d="M55 684L739 0" stroke="#E89BAE"/>
+    <path d="M91 684L775 0" stroke="#E89BAE"/>
+    <path d="M127 684L811 0" stroke="#E89BAE"/>
+    <path d="M163 684L847 0" stroke="#E89BAE"/>
+    <path d="M199 684L883 0" stroke="#E89BAE"/>
+    <path d="M235 684L919 0" stroke="#E89BAE"/>
+    <path d="M271 684L955 0" stroke="#E89BAE"/>
+    <path d="M307 684L991 0" stroke="#E89BAE"/>
+    <path d="M343 684L1027 0" stroke="#E89BAE"/>
+    <path d="M379 684L1063 0" stroke="#E89BAE"/>
+    <path d="M415 684L1099 0" stroke="#E89BAE"/>
+    <path d="M451 684L1135 0" stroke="#E89BAE"/>
+    <path d="M487 684L1171 0" stroke="#E89BAE"/>
+    <path d="M523 684L1207 0" stroke="#E89BAE"/>
+    <path d="M559 684L1243 0" stroke="#E89BAE"/>
+    <path d="M595 684L1279 0" stroke="#E89BAE"/>
+    <path d="M631 684L1315 0" stroke="#E89BAE"/>
+    <path d="M667 684L1351 0" stroke="#E89BAE"/>
+    <path d="M703 684L1387 0" stroke="#E89BAE"/>
+    <path d="M739 684L1423 0" stroke="#E89BAE"/>
+    <path d="M775 684L1459 0" stroke="#E89BAE"/>
+    <path d="M811 684L1495 0" stroke="#E89BAE"/>
+    <path d="M847 684L1531 0" stroke="#E89BAE"/>
+    <path d="M883 684L1567 0" stroke="#E89BAE"/>
+    <path d="M919 684L1603 0" stroke="#E89BAE"/>
+    <path d="M955 684L1639 0" stroke="#E89BAE"/>
+    <path d="M991 684L1675 0" stroke="#E89BAE"/>
+    <path d="M1027 684L1711 0" stroke="#E89BAE"/>
+    <path d="M1063 684L1747 0" stroke="#E89BAE"/>
+    <path d="M1099 684L1783 0" stroke="#E89BAE"/>
+    <path d="M1135 684L1819 0" stroke="#E89BAE"/>
+    <path d="M1171 684L1855 0" stroke="#E89BAE"/>
+    <path d="M1207 684L1891 0" stroke="#E89BAE"/>
+    <path d="M1243 684L1927 0" stroke="#E89BAE"/>
+    <path d="M1279 684L1963 0" stroke="#E89BAE"/>
+    <path d="M1315 684L1999 0" stroke="#E89BAE"/>
+    <path d="M1351 684L2035 0" stroke="#E89BAE"/>
+  </g>
+  <defs>
+    <radialGradient id="softGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1010 340) rotate(90) scale(300 760)">
+      <stop stop-color="white" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="white" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>
