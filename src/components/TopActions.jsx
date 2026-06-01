@@ -3,8 +3,10 @@ import { CartIcon } from './icons';
 
 function TopActions({
   cartCount,
+  currentView,
   displayName,
   isAdmin,
+  onAdminViewChange,
   onCartOpen,
   onLoginOpen,
   onLogout,
@@ -15,6 +17,24 @@ function TopActions({
       {session ? (
         <div className="session-actions">
           <span>Hola, {displayName}</span>
+          {isAdmin && (
+            <div className="admin-top-nav" aria-label="Navegacion admin">
+              <button
+                className={currentView === 'catalog' ? 'is-active' : ''}
+                type="button"
+                onClick={() => onAdminViewChange('catalog')}
+              >
+                Productos
+              </button>
+              <button
+                className={currentView === 'orders' ? 'is-active' : ''}
+                type="button"
+                onClick={() => onAdminViewChange('orders')}
+              >
+                Pedidos
+              </button>
+            </div>
+          )}
           {!isAdmin && (
             <button className="cart-button" type="button" onClick={onCartOpen}>
               <CartIcon />

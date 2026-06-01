@@ -1,10 +1,21 @@
--- Accesorios Margarita - Crear pedido y descontar stock
--- Ejecutar despues de 01_schema.sql, 02_seed_data.sql y 03_auth_storage_rls.sql.
+-- Accesorios Margarita - Funciones completas de pedidos
+-- Ejecutar en Supabase SQL Editor si aparece:
+-- Could not find the function public.crear_pedido_con_items(...)
 
-alter table public.pedidos add column if not exists medio_pago text;
-alter table public.pedidos add column if not exists pago_estado text not null default 'pendiente';
-alter table public.pedidos add column if not exists total numeric(12, 2) not null default 0;
-alter table public.pedidos add column if not exists estado text not null default 'pendiente';
+alter table public.pedidos
+  add column if not exists estado text not null default 'pendiente';
+
+alter table public.pedidos
+  add column if not exists medio_pago text;
+
+alter table public.pedidos
+  add column if not exists pago_estado text not null default 'pendiente';
+
+alter table public.pedidos
+  add column if not exists total numeric(12, 2) not null default 0;
+
+alter table public.pedido_items
+  add column if not exists precio_unitario numeric(12, 2) not null default 0;
 
 do $$
 begin
@@ -56,7 +67,10 @@ begin
     v_usuario_id,
     'pendiente',
     p_medio_pago,
-    case when p_medio_pago = 'efectivo' then 'pendiente' else 'comprobante_pendiente' end,
+    case
+      when p_medio_pago = 'efectivo' then 'pendiente'
+      else 'comprobante_pendiente'
+    end,
     0
   )
   returning id into v_pedido_id;
@@ -124,3 +138,33 @@ end;
 $$;
 
 grant execute on function public.crear_pedido_con_items(jsonb, text) to authenticated;
+
+create or replace function public.marcar_pedido_entregado_admin(p_pedido_id bigint)
+returns public.pedidos
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_pedido public.pedidos;
+begin
+  if not public.is_admin() then
+    raise exception 'Solo un administrador puede marcar pedidos como entregados.';
+  end if;
+
+  update public.pedidos
+  set estado = 'entregado'
+  where id = p_pedido_id
+  returning * into v_pedido;
+
+  if not found then
+    raise exception 'Pedido no encontrado.';
+  end if;
+
+  return v_pedido;
+end;
+$$;
+
+grant execute on function public.marcar_pedido_entregado_admin(bigint) to authenticated;
+
+notify pgrst, 'reload schema';

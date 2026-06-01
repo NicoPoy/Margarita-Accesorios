@@ -108,7 +108,35 @@ from public.pedidos
 join public.usuarios on usuarios.id = pedidos.usuario_id
 order by pedidos.fecha desc;
 
--- 9. Detalle de un pedido. Cambiar el valor de :pedido_id por el id real.
+-- 9. Pedidos completos para vista admin.
+select
+  pedidos.id as pedido_id,
+  pedidos.fecha,
+  pedidos.estado,
+  case
+    when pedidos.estado = 'entregado' then 'Entregado'
+    else 'Entrega pendiente'
+  end as entrega,
+  pedidos.medio_pago,
+  pedidos.pago_estado,
+  pedidos.total as total_pedido,
+  usuarios.nombre as cliente,
+  usuarios.whatsapp,
+  usuarios.dni,
+  pedido_items.producto_id,
+  productos.nombre as producto,
+  coalesce(categorias.nombre, productos.categoria) as categoria,
+  pedido_items.cantidad,
+  pedido_items.precio_unitario,
+  pedido_items.subtotal
+from public.pedidos
+join public.usuarios on usuarios.id = pedidos.usuario_id
+join public.pedido_items on pedido_items.pedido_id = pedidos.id
+join public.productos on productos.id = pedido_items.producto_id
+left join public.categorias on categorias.id = productos.categoria_id
+order by pedidos.fecha desc, pedidos.id desc, productos.nombre;
+
+-- 10. Detalle de un pedido. Cambiar el valor de :pedido_id por el id real.
 select
   pedido_items.pedido_id,
   productos.nombre as producto,
@@ -122,7 +150,7 @@ left join public.categorias on categorias.id = productos.categoria_id
 where pedido_items.pedido_id = :pedido_id
 order by productos.nombre;
 
--- 10. Ventas por producto.
+-- 11. Ventas por producto.
 select
   productos.id,
   productos.nombre,
@@ -137,7 +165,7 @@ left join public.pedidos on pedidos.id = pedido_items.pedido_id
 group by productos.id, productos.nombre, coalesce(categorias.nombre, productos.categoria)
 order by total_vendido desc, unidades_vendidas desc;
 
--- 11. Imagenes subidas al bucket de productos.
+-- 12. Imagenes subidas al bucket de productos.
 select
   name,
   bucket_id,
@@ -148,7 +176,7 @@ from storage.objects
 where bucket_id = 'product-images'
 order by created_at desc;
 
--- 12. Buscar productos por texto. Cambiar 'anillo' por el texto deseado.
+-- 13. Buscar productos por texto. Cambiar 'anillo' por el texto deseado.
 select
   productos.id,
   productos.nombre,

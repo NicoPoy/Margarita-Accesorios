@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import AdminOrders from './components/AdminOrders';
 import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import CartDrawer from './components/CartDrawer';
@@ -9,14 +10,10 @@ import ProductCatalog from './components/ProductCatalog';
 import SiteFooter from './components/SiteFooter';
 import Toolbar from './components/Toolbar';
 import TopActions from './components/TopActions';
-import { DEFAULT_PRODUCT_IMAGE, initialProducts } from './data/products';
+import { DEFAULT_PRODUCT_IMAGE } from './data/products';
 import { hasSupabaseConfig, supabase } from './lib/supabase';
 
 const mercadoPagoPaymentLink = import.meta.env.VITE_MERCADO_PAGO_PAYMENT_LINK;
-
-const fallbackCategories = [...new Set(initialProducts.map((product) => product.category))]
-  .sort((a, b) => a.localeCompare(b))
-  .map((name, index) => ({ id: `local-${index + 1}`, name, active: true }));
 
 const mapDatabaseCategory = (category) => ({
   id: category.id,
@@ -32,6 +29,7 @@ const mapDatabaseProduct = (product) => ({
   price: Number(product.precio),
   stock: Number(product.stock || 0),
   image: product.imagen_url || DEFAULT_PRODUCT_IMAGE,
+  imagePath: product.imagen_path || null,
   active: product.activo !== false
 });
 
@@ -46,6 +44,37 @@ const mapProductToDatabase = (product) => ({
   activo: true
 });
 
+const mapDatabaseOrder = (order) => ({
+  id: order.id,
+  date: order.fecha,
+  status: order.estado,
+  paymentMethod: order.medio_pago,
+  paymentStatus: order.pago_estado,
+  total: Number(order.total || 0),
+  customer: {
+    name: order.usuarios?.nombre || 'Cliente sin nombre',
+    whatsapp: order.usuarios?.whatsapp || '',
+    dni: order.usuarios?.dni || ''
+  },
+  items: (order.pedido_items || []).map((item) => ({
+    id: item.id,
+    quantity: Number(item.cantidad || 0),
+    unitPrice: Number(item.precio_unitario || 0),
+    subtotal:
+      item.subtotal === null || item.subtotal === undefined
+        ? Number(item.cantidad || 0) * Number(item.precio_unitario || 0)
+        : Number(item.subtotal || 0),
+    product: {
+      name: item.productos?.nombre || 'Producto eliminado',
+      category:
+        item.productos?.categorias?.nombre ||
+        item.productos?.categoria ||
+        'Sin categoria',
+      image: item.productos?.imagen_url || DEFAULT_PRODUCT_IMAGE
+    }
+  }))
+});
+
 const sanitizeFileName = (fileName) =>
   fileName
     .normalize('NFD')
@@ -56,8 +85,8 @@ const sanitizeFileName = (fileName) =>
     .toLowerCase();
 
 function App() {
-  const [catalogProducts, setCatalogProducts] = useState(initialProducts);
-  const [catalogCategories, setCatalogCategories] = useState(fallbackCategories);
+  const [catalogProducts, setCatalogProducts] = useState([]);
+  const [catalogCategories, setCatalogCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [query, setQuery] = useState('');
   const [authMode, setAuthMode] = useState('login');
@@ -73,6 +102,10 @@ function App() {
   const [currentView, setCurrentView] = useState('catalog');
   const [productsStatus, setProductsStatus] = useState('');
   const [adminMessage, setAdminMessage] = useState('');
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [adminOrders, setAdminOrders] = useState([]);
+  const [ordersStatus, setOrdersStatus] = useState('');
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const isClient = userRoles.includes('cliente');
@@ -126,7 +159,10 @@ function App() {
 
   useEffect(() => {
     const loadCatalogData = async () => {
-      if (!hasSupabaseConfig) return;
+      if (!hasSupabaseConfig) {
+        setProductsStatus('Falta configurar Supabase para cargar productos.');
+        return;
+      }
 
       const [{ data: categoriesData, error: categoriesError }, { data, error }] =
         await Promise.all([
@@ -137,7 +173,7 @@ function App() {
             .order('nombre', { ascending: true }),
           supabase
             .from('productos')
-            .select('id, nombre, categoria, categoria_id, precio, stock, imagen_url, activo, categorias(id, nombre)')
+            .select('id, nombre, categoria, categoria_id, precio, stock, imagen_url, imagen_path, activo, categorias(id, nombre)')
             .eq('activo', true)
             .order('nombre', { ascending: true })
         ]);
@@ -148,7 +184,7 @@ function App() {
 
       if (error) {
         setProductsStatus(
-          'No se pudieron cargar los productos desde Supabase. Se muestra el catalogo local.'
+          'No se pudieron cargar los productos desde Supabase.'
         );
         return;
       }
@@ -196,6 +232,39 @@ function App() {
     });
   }, [activeCategory, activeProducts, query]);
 
+  const loadAdminOrders = async () => {
+    setOrdersStatus('');
+
+    if (!hasSupabaseConfig) {
+      setOrdersStatus('Falta configurar Supabase para cargar pedidos.');
+      return;
+    }
+
+    setIsLoadingOrders(true);
+
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select(
+        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, productos(nombre, categoria, imagen_url, categorias(nombre)))'
+      )
+      .order('fecha', { ascending: false });
+
+    setIsLoadingOrders(false);
+
+    if (error) {
+      setOrdersStatus(`No se pudieron cargar los pedidos: ${error.message}`);
+      return;
+    }
+
+    setAdminOrders((data || []).map(mapDatabaseOrder));
+  };
+
+  useEffect(() => {
+    if (isAdmin && currentView === 'orders') {
+      loadAdminOrders();
+    }
+  }, [currentView, isAdmin]);
+
   const openAuth = (mode) => {
     setAuthMode(mode);
     setIsAuthOpen(true);
@@ -212,6 +281,12 @@ function App() {
     setCartItems([]);
     setIsCartOpen(false);
     setCurrentView('catalog');
+  };
+
+  const openAdminView = (view) => {
+    setCurrentView(view);
+    setEditingProduct(null);
+    setCheckoutMessage('');
   };
 
   const uploadProductImage = async (file) => {
@@ -262,13 +337,6 @@ function App() {
       return false;
     }
 
-    if (String(selectedCategory.id).startsWith('local-')) {
-      setAdminMessage(
-        'Las categorias todavia son locales. Ejecuta el SQL actualizado en Supabase antes de crear productos.'
-      );
-      return false;
-    }
-
     let uploadedImage;
 
     try {
@@ -288,7 +356,7 @@ function App() {
           imagePath: uploadedImage.imagePath
         })
       )
-      .select('id, nombre, categoria, categoria_id, precio, stock, imagen_url, activo, categorias(id, nombre)')
+      .select('id, nombre, categoria, categoria_id, precio, stock, imagen_url, imagen_path, activo, categorias(id, nombre)')
       .single();
 
     if (error) {
@@ -305,6 +373,81 @@ function App() {
     return true;
   };
 
+  const updateProduct = async (product) => {
+    setAdminMessage('');
+
+    if (!hasSupabaseConfig) {
+      setAdminMessage('Falta configurar Supabase para modificar productos.');
+      return false;
+    }
+
+    const selectedCategory = catalogCategories.find(
+      (category) => String(category.id) === String(product.categoryId)
+    );
+
+    if (!selectedCategory) {
+      setAdminMessage('Selecciona una categoria valida desde la base de datos.');
+      return false;
+    }
+
+    let uploadedImage = {
+      imageUrl: product.currentImageUrl || null,
+      imagePath: product.currentImagePath || null
+    };
+
+    if (product.photoFile) {
+      try {
+        uploadedImage = await uploadProductImage(product.photoFile);
+      } catch (error) {
+        setAdminMessage(`No se pudo subir la imagen: ${error.message}`);
+        return false;
+      }
+    }
+
+    const { data, error } = await supabase.rpc('actualizar_producto_admin', {
+      p_producto_id: product.id,
+      p_nombre: product.name.trim(),
+      p_categoria_id: Number(product.categoryId),
+      p_categoria: selectedCategory.name,
+      p_precio: Number(product.price),
+      p_stock: Number(product.stock || 0),
+      p_imagen_url: uploadedImage.imageUrl,
+      p_imagen_path: uploadedImage.imagePath
+    });
+
+    if (error) {
+      setAdminMessage(`No se pudo modificar el producto: ${error.message}`);
+      return false;
+    }
+
+    const updatedProduct = mapDatabaseProduct(data);
+
+    setCatalogProducts((currentProducts) =>
+      currentProducts
+        .map((currentProduct) =>
+          currentProduct.id === updatedProduct.id ? updatedProduct : currentProduct
+        )
+        .sort((a, b) =>
+          `${a.category} ${a.name}`.localeCompare(`${b.category} ${b.name}`)
+        )
+    );
+    setCartItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === updatedProduct.id
+          ? {
+              ...item,
+              name: updatedProduct.name,
+              price: updatedProduct.price,
+              image: updatedProduct.image
+            }
+          : item
+      )
+    );
+    setEditingProduct(null);
+    setAdminMessage('Producto modificado en Supabase.');
+    return true;
+  };
+
   const deleteProduct = async (product) => {
     setAdminMessage('');
 
@@ -313,10 +456,9 @@ function App() {
       return;
     }
 
-    const { error } = await supabase
-      .from('productos')
-      .update({ activo: false })
-      .eq('id', product.id);
+    const { error } = await supabase.rpc('eliminar_producto_admin', {
+      p_producto_id: product.id
+    });
 
     if (error) {
       setAdminMessage(`No se pudo eliminar el producto: ${error.message}`);
@@ -328,6 +470,9 @@ function App() {
     );
     setCartItems((currentItems) =>
       currentItems.filter((currentItem) => currentItem.id !== product.id)
+    );
+    setEditingProduct((currentProduct) =>
+      currentProduct?.id === product.id ? null : currentProduct
     );
     setAdminMessage('Producto eliminado del catalogo.');
   };
@@ -484,12 +629,44 @@ function App() {
     setCurrentView('catalog');
   };
 
+  const markOrderDelivered = async (orderId) => {
+    setOrdersStatus('');
+
+    if (!hasSupabaseConfig) {
+      setOrdersStatus('Falta configurar Supabase para actualizar pedidos.');
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('marcar_pedido_entregado_admin', {
+      p_pedido_id: orderId
+    });
+
+    if (error) {
+      setOrdersStatus(`No se pudo marcar como entregado: ${error.message}`);
+      return;
+    }
+
+    setAdminOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              status: data?.estado || 'entregado',
+              paymentStatus: data?.pago_estado || order.paymentStatus
+            }
+          : order
+      )
+    );
+  };
+
   return (
     <main className="page-shell">
       <TopActions
         cartCount={cartCount}
         displayName={displayName}
         isAdmin={isAdmin}
+        currentView={currentView}
+        onAdminViewChange={openAdminView}
         onCartOpen={() => setIsCartOpen(true)}
         onLoginOpen={() => openAuth('login')}
         onLogout={handleLogout}
@@ -515,14 +692,26 @@ function App() {
       {currentView === 'catalog' && isAdmin && (
         <AdminPanel
           categories={catalogCategories}
+          editingProduct={editingProduct}
           message={adminMessage}
           outOfStockProducts={outOfStockProducts}
+          onCancelEdit={() => setEditingProduct(null)}
           onCreateProduct={createProduct}
           onDeleteProduct={deleteProduct}
+          onEditProduct={setEditingProduct}
+          onUpdateProduct={updateProduct}
         />
       )}
 
-      {currentView === 'catalog' ? (
+      {currentView === 'orders' && isAdmin ? (
+        <AdminOrders
+          isLoading={isLoadingOrders}
+          message={ordersStatus}
+          orders={adminOrders}
+          onMarkDelivered={markOrderDelivered}
+          onRefresh={loadAdminOrders}
+        />
+      ) : currentView === 'catalog' ? (
         <ProductCatalog
           activeCategory={activeCategory}
           canAddToCart={!isAdmin}
@@ -530,6 +719,7 @@ function App() {
           products={filteredProducts}
           onAddToCart={addToCart}
           onDeleteProduct={deleteProduct}
+          onEditProduct={setEditingProduct}
         />
       ) : (
         <CheckoutView

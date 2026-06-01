@@ -12,14 +12,19 @@ const initialForm = {
 
 function AdminPanel({
   categories,
+  editingProduct,
   message,
   outOfStockProducts,
+  onCancelEdit,
   onCreateProduct,
-  onDeleteProduct
+  onDeleteProduct,
+  onEditProduct,
+  onUpdateProduct
 }) {
   const [form, setForm] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
   const [localError, setLocalError] = useState('');
+  const isEditing = Boolean(editingProduct);
 
   const categoryOptions = useMemo(
     () =>
@@ -32,8 +37,25 @@ function AdminPanel({
   const [previewUrl, setPreviewUrl] = useState(DEFAULT_PRODUCT_IMAGE);
 
   useEffect(() => {
+    if (!editingProduct) {
+      setForm(initialForm);
+      return;
+    }
+
+    setForm({
+      name: editingProduct.name || '',
+      categoryId: editingProduct.categoryId || '',
+      price: String(editingProduct.price || ''),
+      stock: String(editingProduct.stock ?? 0),
+      photoFile: null
+    });
+    setPreviewUrl(editingProduct.image || DEFAULT_PRODUCT_IMAGE);
+    setLocalError('');
+  }, [editingProduct]);
+
+  useEffect(() => {
     if (!form.photoFile) {
-      setPreviewUrl(DEFAULT_PRODUCT_IMAGE);
+      setPreviewUrl(editingProduct?.image || DEFAULT_PRODUCT_IMAGE);
       return undefined;
     }
 
@@ -41,7 +63,7 @@ function AdminPanel({
     setPreviewUrl(nextPreviewUrl);
 
     return () => URL.revokeObjectURL(nextPreviewUrl);
-  }, [form.photoFile]);
+  }, [editingProduct, form.photoFile]);
 
   const updateField = (field, value) => {
     setForm((currentForm) => ({ ...currentForm, [field]: value }));
@@ -52,7 +74,7 @@ function AdminPanel({
     setLocalError('');
 
     if (!form.name.trim() || !form.categoryId) {
-      setLocalError('Completa nombre y categoria para crear el producto.');
+      setLocalError('Completa nombre y categoria para guardar el producto.');
       return;
     }
 
@@ -67,25 +89,42 @@ function AdminPanel({
     }
 
     setIsSaving(true);
-    const wasCreated = await onCreateProduct({
+    const payload = {
       name: form.name,
       categoryId: form.categoryId,
       price: form.price,
       stock: form.stock,
       photoFile: form.photoFile
-    });
+    };
+
+    const wasSaved = isEditing
+      ? await onUpdateProduct({
+          ...payload,
+          id: editingProduct.id,
+          currentImageUrl:
+            editingProduct.image === DEFAULT_PRODUCT_IMAGE ? null : editingProduct.image,
+          currentImagePath: editingProduct.imagePath
+        })
+      : await onCreateProduct(payload);
+
     setIsSaving(false);
 
-    if (wasCreated) {
+    if (wasSaved) {
       setForm(initialForm);
     }
+  };
+
+  const handleCancelEdit = () => {
+    setLocalError('');
+    setForm(initialForm);
+    onCancelEdit();
   };
 
   return (
     <section className="admin-panel">
       <div className="admin-heading">
-        <span>Gestion</span>
-        <h2>Administrar productos</h2>
+        <span>{isEditing ? 'Edicion' : 'Gestion'}</span>
+        <h2>{isEditing ? 'Modificar producto' : 'Administrar productos'}</h2>
       </div>
 
       <div className="admin-layout">
@@ -153,7 +192,9 @@ function AdminPanel({
                   }
                 />
                 <small>
-                  Opcional. Si no cargas foto, se usa la imagen generica.
+                  {isEditing
+                    ? 'Opcional. Si no cargas otra foto, se mantiene la actual.'
+                    : 'Opcional. Si no cargas foto, se usa la imagen generica.'}
                 </small>
               </div>
             </div>
@@ -165,9 +206,25 @@ function AdminPanel({
             </p>
           )}
 
-          <button className="admin-submit" type="submit" disabled={isSaving}>
-            {isSaving ? 'Guardando...' : 'Agregar producto'}
-          </button>
+          <div className="admin-form-actions">
+            <button className="admin-submit" type="submit" disabled={isSaving}>
+              {isSaving
+                ? 'Guardando...'
+                : isEditing
+                  ? 'Guardar cambios'
+                  : 'Agregar producto'}
+            </button>
+
+            {isEditing && (
+              <button
+                className="admin-cancel-button"
+                type="button"
+                onClick={handleCancelEdit}
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
 
         <div className="admin-stock-section">
@@ -192,6 +249,13 @@ function AdminPanel({
                     <span>{product.category}</span>
                   </div>
                   <b>{formatPrice(product.price)}</b>
+                  <button
+                    className="edit-stock-product-button"
+                    type="button"
+                    onClick={() => onEditProduct(product)}
+                  >
+                    Modificar
+                  </button>
                   <button
                     className="delete-stock-product-button"
                     type="button"

@@ -8,7 +8,8 @@ function ProductCatalog({
   canManageProducts = false,
   products,
   onAddToCart,
-  onDeleteProduct
+  onDeleteProduct,
+  onEditProduct
 }) {
   return (
     <section className="catalog" aria-live="polite">
@@ -42,13 +43,22 @@ function ProductCatalog({
               </button>
             )}
             {canManageProducts && (
-              <button
-                className="delete-product-button"
-                type="button"
-                onClick={() => onDeleteProduct(product)}
-              >
-                Eliminar producto
-              </button>
+              <div className="product-manage-actions">
+                <button
+                  className="edit-product-button"
+                  type="button"
+                  onClick={() => onEditProduct(product)}
+                >
+                  Modificar
+                </button>
+                <button
+                  className="delete-product-button"
+                  type="button"
+                  onClick={() => onDeleteProduct(product)}
+                >
+                  Eliminar
+                </button>
+              </div>
             )}
           </article>
         ))}

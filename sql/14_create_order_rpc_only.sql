@@ -1,26 +1,5 @@
--- Accesorios Margarita - Crear pedido y descontar stock
--- Ejecutar despues de 01_schema.sql, 02_seed_data.sql y 03_auth_storage_rls.sql.
-
-alter table public.pedidos add column if not exists medio_pago text;
-alter table public.pedidos add column if not exists pago_estado text not null default 'pendiente';
-alter table public.pedidos add column if not exists total numeric(12, 2) not null default 0;
-alter table public.pedidos add column if not exists estado text not null default 'pendiente';
-
-do $$
-begin
-  if not exists (
-    select 1
-    from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'pedido_items'
-      and column_name = 'subtotal'
-  ) then
-    alter table public.pedido_items
-      add column subtotal numeric(12, 2)
-      generated always as (cantidad * precio_unitario) stored;
-  end if;
-end;
-$$;
+-- Accesorios Margarita - Solo RPC de pedidos
+-- Ejecutar este archivo completo en Supabase SQL Editor.
 
 create or replace function public.crear_pedido_con_items(
   p_items jsonb,
@@ -30,7 +9,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $crear_pedido$
 declare
   v_usuario_id uuid := auth.uid();
   v_pedido_id bigint;
@@ -51,12 +30,16 @@ begin
     raise exception 'El pedido no tiene productos.';
   end if;
 
-  insert into public.pedidos (usuario_id, estado, medio_pago, pago_estado, total)
+  insert into public.pedidos (usuario_id, fecha, estado, medio_pago, pago_estado, total)
   values (
     v_usuario_id,
+    now(),
     'pendiente',
     p_medio_pago,
-    case when p_medio_pago = 'efectivo' then 'pendiente' else 'comprobante_pendiente' end,
+    case
+      when p_medio_pago = 'efectivo' then 'pendiente'
+      else 'comprobante_pendiente'
+    end,
     0
   )
   returning id into v_pedido_id;
@@ -121,6 +104,36 @@ exception
 
     raise;
 end;
-$$;
+$crear_pedido$;
 
 grant execute on function public.crear_pedido_con_items(jsonb, text) to authenticated;
+
+create or replace function public.marcar_pedido_entregado_admin(p_pedido_id bigint)
+returns public.pedidos
+language plpgsql
+security definer
+set search_path = public
+as $marcar_entregado$
+declare
+  v_pedido public.pedidos;
+begin
+  if not public.is_admin() then
+    raise exception 'Solo un administrador puede marcar pedidos como entregados.';
+  end if;
+
+  update public.pedidos
+  set estado = 'entregado'
+  where id = p_pedido_id
+  returning * into v_pedido;
+
+  if not found then
+    raise exception 'Pedido no encontrado.';
+  end if;
+
+  return v_pedido;
+end;
+$marcar_entregado$;
+
+grant execute on function public.marcar_pedido_entregado_admin(bigint) to authenticated;
+
+notify pgrst, 'reload schema';
