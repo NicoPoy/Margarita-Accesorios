@@ -305,6 +305,33 @@ function App() {
     return true;
   };
 
+  const deleteProduct = async (product) => {
+    setAdminMessage('');
+
+    if (!hasSupabaseConfig) {
+      setAdminMessage('Falta configurar Supabase para eliminar productos.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('productos')
+      .update({ activo: false })
+      .eq('id', product.id);
+
+    if (error) {
+      setAdminMessage(`No se pudo eliminar el producto: ${error.message}`);
+      return;
+    }
+
+    setCatalogProducts((currentProducts) =>
+      currentProducts.filter((currentProduct) => currentProduct.id !== product.id)
+    );
+    setCartItems((currentItems) =>
+      currentItems.filter((currentItem) => currentItem.id !== product.id)
+    );
+    setAdminMessage('Producto eliminado del catalogo.');
+  };
+
   const changeProductStock = (productId, delta) => {
     setCatalogProducts((currentProducts) =>
       currentProducts.map((product) =>
@@ -491,6 +518,7 @@ function App() {
           message={adminMessage}
           outOfStockProducts={outOfStockProducts}
           onCreateProduct={createProduct}
+          onDeleteProduct={deleteProduct}
         />
       )}
 
@@ -498,8 +526,10 @@ function App() {
         <ProductCatalog
           activeCategory={activeCategory}
           canAddToCart={!isAdmin}
+          canManageProducts={isAdmin}
           products={filteredProducts}
           onAddToCart={addToCart}
+          onDeleteProduct={deleteProduct}
         />
       ) : (
         <CheckoutView

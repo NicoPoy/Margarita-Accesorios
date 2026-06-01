@@ -10,7 +10,13 @@ const initialForm = {
   photoFile: null
 };
 
-function AdminPanel({ categories, message, outOfStockProducts, onCreateProduct }) {
+function AdminPanel({
+  categories,
+  message,
+  outOfStockProducts,
+  onCreateProduct,
+  onDeleteProduct
+}) {
   const [form, setForm] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
   const [localError, setLocalError] = useState('');
@@ -186,6 +192,13 @@ function AdminPanel({ categories, message, outOfStockProducts, onCreateProduct }
                     <span>{product.category}</span>
                   </div>
                   <b>{formatPrice(product.price)}</b>
+                  <button
+                    className="delete-stock-product-button"
+                    type="button"
+                    onClick={() => onDeleteProduct(product)}
+                  >
+                    Eliminar
+                  </button>
                 </article>
               ))}
             </div>

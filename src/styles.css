@@ -719,6 +719,14 @@ h1 {
   white-space: nowrap;
 }
 
+.delete-stock-product-button {
+  grid-column: 2 / -1;
+  justify-self: start;
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 0.82rem;
+}
+
 .catalog-heading {
   display: flex;
   align-items: end;
@@ -835,6 +843,25 @@ h1 {
   background: var(--mauve-100);
   color: var(--mauve-700);
   box-shadow: none;
+}
+
+.delete-product-button,
+.delete-stock-product-button {
+  min-height: 40px;
+  border: 1px solid rgba(139, 38, 53, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 241, 241, 0.78);
+  color: #8b2635;
+  font-weight: 900;
+  transition: 160ms ease;
+}
+
+.delete-product-button:hover,
+.delete-stock-product-button:hover {
+  border-color: rgba(139, 38, 53, 0.38);
+  background: #8b2635;
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .site-footer {

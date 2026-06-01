@@ -2,7 +2,14 @@ import React from 'react';
 import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import { formatPrice } from '../utils/formatters';
 
-function ProductCatalog({ activeCategory, canAddToCart = true, products, onAddToCart }) {
+function ProductCatalog({
+  activeCategory,
+  canAddToCart = true,
+  canManageProducts = false,
+  products,
+  onAddToCart,
+  onDeleteProduct
+}) {
   return (
     <section className="catalog" aria-live="polite">
       <div className="catalog-heading">
@@ -32,6 +39,15 @@ function ProductCatalog({ activeCategory, canAddToCart = true, products, onAddTo
                 onClick={() => onAddToCart(product)}
               >
                 {product.stock === 0 ? 'Sin stock' : 'Agregar al carrito'}
+              </button>
+            )}
+            {canManageProducts && (
+              <button
+                className="delete-product-button"
+                type="button"
+                onClick={() => onDeleteProduct(product)}
+              >
+                Eliminar producto
               </button>
             )}
           </article>
