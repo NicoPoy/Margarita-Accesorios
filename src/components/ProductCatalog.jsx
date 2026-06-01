@@ -149,6 +149,7 @@ function ProductCatalog({
 function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
   const images = product.images?.length ? product.images : [product.image || DEFAULT_PRODUCT_IMAGE];
   const [activeImage, setActiveImage] = useState(images[0]);
+  const [zoomImage, setZoomImage] = useState(null);
   const [selectedVariety, setSelectedVariety] = useState('');
   const hasVarieties = product.varieties?.length > 0;
   const selectedVariant = product.variants?.find(
@@ -165,7 +166,14 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
           x
         </button>
         <div className="product-detail-gallery">
-          <img src={activeImage} alt={product.name} />
+          <button
+            className="product-detail-main-image"
+            type="button"
+            onClick={() => setZoomImage(activeImage)}
+            aria-label="Ampliar foto del producto"
+          >
+            <img src={activeImage} alt={product.name} />
+          </button>
           {images.length > 1 && (
             <div>
               {images.map((image) => (
@@ -227,6 +235,19 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
           )}
         </div>
       </article>
+
+      {zoomImage && (
+        <div className="product-zoom" role="dialog" aria-modal="true">
+          <button
+            className="product-zoom-close"
+            type="button"
+            onClick={() => setZoomImage(null)}
+          >
+            x
+          </button>
+          <img src={zoomImage} alt={product.name} />
+        </div>
+      )}
     </div>
   );
 }

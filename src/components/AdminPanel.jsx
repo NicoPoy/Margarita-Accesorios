@@ -7,10 +7,18 @@ const initialForm = {
   categoryId: '',
   price: '',
   stock: '1',
-  photoFiles: [],
+  photos: [],
   varietyDraft: '',
   varieties: [],
   variantStocks: {}
+};
+
+const clearPhotoPreviews = (photos = []) => {
+  photos.forEach((photo) => {
+    if (photo.previewUrl) {
+      URL.revokeObjectURL(photo.previewUrl);
+    }
+  });
 };
 
 const buildVariantStocks = (variants = []) =>
@@ -46,7 +54,18 @@ function AdminPanel({
     [categories]
   );
 
-  const [previewUrl, setPreviewUrl] = useState(DEFAULT_PRODUCT_IMAGE);
+  const currentPhotoPreviews = useMemo(() => {
+    const images = editingProduct?.images?.length
+      ? editingProduct.images
+      : [editingProduct?.image || DEFAULT_PRODUCT_IMAGE];
+
+    return images.filter(Boolean);
+  }, [editingProduct]);
+  const displayedPhotoPreviews = isEditing
+    ? [...currentPhotoPreviews, ...form.photos.map((photo) => photo.previewUrl)]
+    : form.photos.length
+      ? form.photos.map((photo) => photo.previewUrl)
+      : [DEFAULT_PRODUCT_IMAGE];
   const variantRows = useMemo(
     () => form.varieties.map((name) => ({ key: name, name })),
     [form.varieties]
@@ -65,35 +84,35 @@ function AdminPanel({
 
   useEffect(() => {
     if (!editingProduct) {
-      setForm(initialForm);
+      setForm((currentForm) => {
+        clearPhotoPreviews(currentForm.photos);
+        return initialForm;
+      });
       return;
     }
 
-    setForm({
+    setForm((currentForm) => {
+      clearPhotoPreviews(currentForm.photos);
+
+      return {
       name: editingProduct.name || '',
       categoryId: editingProduct.categoryId || '',
       price: String(editingProduct.price || ''),
       stock: String(editingProduct.stock ?? 0),
-      photoFiles: [],
+      photos: [],
       varietyDraft: '',
       varieties: editingProduct.varieties || [],
       variantStocks: buildVariantStocks(editingProduct.variants)
+      };
     });
-    setPreviewUrl(editingProduct.image || DEFAULT_PRODUCT_IMAGE);
     setLocalError('');
   }, [editingProduct]);
 
   useEffect(() => {
-    if (!form.photoFiles.length) {
-      setPreviewUrl(editingProduct?.images?.[0] || editingProduct?.image || DEFAULT_PRODUCT_IMAGE);
-      return undefined;
-    }
-
-    const nextPreviewUrl = URL.createObjectURL(form.photoFiles[0]);
-    setPreviewUrl(nextPreviewUrl);
-
-    return () => URL.revokeObjectURL(nextPreviewUrl);
-  }, [editingProduct, form.photoFiles]);
+    return () => {
+      clearPhotoPreviews(form.photos);
+    };
+  }, []);
 
   const updateField = (field, value) => {
     setForm((currentForm) => ({ ...currentForm, [field]: value }));
@@ -129,7 +148,7 @@ function AdminPanel({
       categoryId: form.categoryId,
       price: form.price,
       stock: form.stock,
-      photoFiles: form.photoFiles,
+      photoFiles: form.photos.map((photo) => photo.file),
       varietiesText: form.varieties.join('\n'),
       variants: variantRows.map((variant) => ({
         name: variant.name,
@@ -153,13 +172,19 @@ function AdminPanel({
     setIsSaving(false);
 
     if (wasSaved) {
-      setForm(initialForm);
+      setForm((currentForm) => {
+        clearPhotoPreviews(currentForm.photos);
+        return initialForm;
+      });
     }
   };
 
   const handleCancelEdit = () => {
     setLocalError('');
-    setForm(initialForm);
+    setForm((currentForm) => {
+      clearPhotoPreviews(currentForm.photos);
+      return initialForm;
+    });
     onCancelEdit();
   };
 
@@ -170,6 +195,47 @@ function AdminPanel({
         ...currentForm.variantStocks,
         [key]: value
       }
+    }));
+  };
+
+  const addPhotoFiles = (files) => {
+    const newFiles = Array.from(files || []);
+
+    if (!newFiles.length) return;
+
+    setForm((currentForm) => {
+      const knownFiles = new Set(
+        currentForm.photos.map(
+          (photo) => `${photo.file.name}-${photo.file.size}-${photo.file.lastModified}`
+        )
+      );
+      const uniqueNewFiles = newFiles.filter(
+        (file) => !knownFiles.has(`${file.name}-${file.size}-${file.lastModified}`)
+      );
+      const nextPhotos = uniqueNewFiles.map((file) => ({
+        id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
+        file,
+        previewUrl: URL.createObjectURL(file)
+      }));
+
+      return {
+        ...currentForm,
+        photos: [...currentForm.photos, ...nextPhotos]
+      };
+    });
+  };
+
+  const removePhotoFile = (index) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      photos: currentForm.photos.filter((photo, fileIndex) => {
+        if (fileIndex === index) {
+          clearPhotoPreviews([photo]);
+          return false;
+        }
+
+        return true;
+      })
     }));
   };
 
@@ -270,27 +336,51 @@ function AdminPanel({
             </label>
           </div>
 
-          <label>
+          <div className="admin-field">
             <span>Fotos del producto</span>
             <div className="admin-file-field">
-              <img src={previewUrl} alt="" aria-hidden="true" />
               <div>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  multiple
-                  onChange={(event) =>
-                    updateField('photoFiles', Array.from(event.target.files || []))
-                  }
-                />
+                <label className="photo-upload-button">
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    multiple
+                    onChange={(event) => {
+                      addPhotoFiles(event.target.files);
+                      event.target.value = '';
+                    }}
+                  />
+                  <span>Agregar fotos</span>
+                </label>
                 <small>
                   {isEditing
-                    ? 'Opcional. Si no cargas fotos nuevas, se mantienen las actuales.'
-                    : 'Opcional. Podes cargar una o varias fotos; si no cargas, se usa la imagen generica.'}
+                    ? 'Opcional. Podes sumar fotos nuevas sin perder las actuales.'
+                    : 'Opcional. Podes cargar una o varias fotos de a poco; si no cargas, se usa la imagen generica.'}
                 </small>
               </div>
+              <div className="admin-photo-preview-grid">
+                {displayedPhotoPreviews.map((preview, index) => {
+                  const selectedIndex = isEditing ? index - currentPhotoPreviews.length : index;
+                  const isSelectedFile = selectedIndex >= 0 && form.photos[selectedIndex];
+
+                  return (
+                    <figure key={`${preview}-${index}`}>
+                      <img src={preview} alt="" aria-hidden="true" />
+                      {isSelectedFile && (
+                        <button
+                          type="button"
+                          onClick={() => removePhotoFile(selectedIndex)}
+                          aria-label="Quitar foto"
+                        >
+                          x
+                        </button>
+                      )}
+                    </figure>
+                  );
+                })}
+              </div>
             </div>
-          </label>
+          </div>
 
           <div className="variety-builder">
             <div className="variety-builder-header">

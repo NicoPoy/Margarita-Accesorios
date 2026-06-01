@@ -645,7 +645,17 @@ function App() {
 
     if (product.photoFiles?.length) {
       try {
-        uploadedImage = await uploadProductImages(product.photoFiles);
+        const newUploadedImages = await uploadProductImages(product.photoFiles);
+        const imageUrls = [
+          ...(product.currentImageUrls || []),
+          ...newUploadedImages.imageUrls
+        ].filter(Boolean);
+
+        uploadedImage = {
+          imageUrl: product.currentImageUrl || newUploadedImages.imageUrl,
+          imageUrls,
+          imagePath: product.currentImagePath || newUploadedImages.imagePath
+        };
       } catch (error) {
         setAdminMessage(`No se pudo subir la imagen: ${error.message}`);
         return false;
