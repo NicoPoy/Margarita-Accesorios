@@ -65,63 +65,81 @@ button {
   isolation: isolate;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 28px;
-  min-height: 176px;
+  justify-content: center;
+  min-height: 168px;
   margin: 8px 0 28px;
   overflow: hidden;
-  padding: 26px 34px;
-  border: 1px solid rgba(216, 101, 136, 0.18);
+  padding: 24px 34px;
+  border: 1px solid rgba(216, 101, 136, 0.2);
   border-radius: 8px;
-  background-color: #fff1f5;
-  background-image: url("/header-background.svg");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  box-shadow: 0 24px 70px rgba(123, 41, 68, 0.13);
+  background:
+    linear-gradient(90deg, rgba(245, 200, 212, 0.5) 0 108px, rgba(255, 249, 251, 0.9) 108px),
+    repeating-linear-gradient(135deg, rgba(216, 101, 136, 0.055) 0 1px, transparent 1px 18px),
+    rgba(255, 249, 251, 0.88);
+  box-shadow: 0 22px 62px rgba(123, 41, 68, 0.12);
 }
 
 .brand-header::before {
-  content: none;
+  content: "";
+  position: absolute;
+  inset: 14px;
+  z-index: -1;
+  border: 1px solid rgba(216, 101, 136, 0.12);
+  border-radius: 8px;
 }
 
 .brand-header::after {
-  content: none;
+  content: "";
+  position: absolute;
+  right: 38px;
+  bottom: 18px;
+  z-index: -1;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: url("/favicon.png") center / 60px 60px no-repeat;
+  opacity: 0.16;
 }
 
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 22px;
+  justify-content: center;
+  gap: 24px;
   min-width: 0;
-  flex: 1 1 auto;
+  width: 100%;
 }
 
 .brand-lockup img {
-  width: clamp(84px, 11vw, 122px);
-  height: clamp(84px, 11vw, 122px);
+  width: 112px;
+  height: 112px;
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 7px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 18px 48px rgba(123, 41, 68, 0.18);
-  background: var(--rose-100);
+  border: 8px solid rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 44px rgba(123, 41, 68, 0.16);
+  background: rgba(255, 240, 244, 0.92);
   flex: 0 0 auto;
   object-fit: contain;
   object-position: center;
 }
 
+.brand-copy {
+  display: grid;
+  justify-items: start;
+  min-width: 0;
+}
+
 .eyebrow {
   display: block;
   width: fit-content;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border: 1px solid rgba(216, 101, 136, 0.22);
   border-radius: 999px;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.78);
   color: var(--rose-700);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0;
 }
@@ -136,7 +154,7 @@ p {
 h1 {
   color: #84304d;
   font-family: "Parisienne", "Brush Script MT", Georgia, cursive;
-  font-size: 4.35rem;
+  font-size: clamp(3rem, 7vw, 4.05rem);
   font-weight: 400;
   line-height: 0.96;
   text-wrap: balance;
@@ -2188,6 +2206,7 @@ h1 {
   }
 
   .brand-lockup {
+    justify-content: flex-start;
     gap: 14px;
   }
 
@@ -2200,6 +2219,22 @@ h1 {
     gap: 20px;
     min-height: auto;
     padding: 22px 18px;
+    background:
+      linear-gradient(90deg, rgba(245, 200, 212, 0.45) 0 72px, rgba(255, 249, 251, 0.9) 72px),
+      repeating-linear-gradient(135deg, rgba(216, 101, 136, 0.055) 0 1px, transparent 1px 18px),
+      rgba(255, 249, 251, 0.9);
+  }
+
+  .brand-header::after {
+    right: 18px;
+    bottom: 14px;
+    width: 58px;
+    height: 58px;
+    background-size: 40px 40px;
+  }
+
+  .brand-copy {
+    justify-items: start;
   }
 
   .login-button,
