@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
-import { formatPrice } from '../utils/formatters';
 
 const initialForm = {
   name: '',
@@ -34,11 +33,8 @@ function AdminPanel({
   categories,
   editingProduct,
   message,
-  outOfStockProducts,
   onCancelEdit,
   onCreateProduct,
-  onDeleteProduct,
-  onEditProduct,
   onUpdateProduct
 }) {
   const [form, setForm] = useState(initialForm);
@@ -475,47 +471,6 @@ function AdminPanel({
           </div>
       </form>
 
-      <div className="admin-stock-section">
-        <div>
-          <span>Solo admin</span>
-          <h3>Sin stock</h3>
-        </div>
-
-        {outOfStockProducts.length === 0 ? (
-          <p className="admin-empty">Todavia no hay productos sin stock.</p>
-        ) : (
-          <div className="admin-stock-list">
-            {outOfStockProducts.map((product) => (
-              <article className="admin-stock-item" key={product.id}>
-                <img
-                  src={product.image || DEFAULT_PRODUCT_IMAGE}
-                  alt=""
-                  aria-hidden="true"
-                />
-                <div>
-                  <strong>{product.name}</strong>
-                  <span>{product.category}</span>
-                </div>
-                <b>{formatPrice(product.price)}</b>
-                <button
-                  className="edit-stock-product-button"
-                  type="button"
-                  onClick={() => onEditProduct(product)}
-                >
-                  Modificar
-                </button>
-                <button
-                  className="delete-stock-product-button"
-                  type="button"
-                  onClick={() => onDeleteProduct(product)}
-                >
-                  Eliminar
-                </button>
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
     </section>
   );
 }

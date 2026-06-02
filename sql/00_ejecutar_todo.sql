@@ -598,3 +598,223 @@ where roles.nombre = 'cliente'
     where usuario_roles.usuario_id = usuarios.id
   )
 on conflict (usuario_id, rol_id) do nothing;
+
+-- Estados claros de pedidos y cancelacion con devolucion de stock.
+alter table public.productos
+  add column if not exists variedades text[] not null default '{}',
+  add column if not exists imagenes_url text[];
+
+create table if not exists public.producto_variantes (
+  id bigserial primary key,
+  producto_id bigint not null references public.productos(id) on delete cascade,
+  nombre text,
+  color text,
+  modelo text,
+  stock integer not null default 0 check (stock >= 0),
+  activo boolean not null default true,
+  creado_en timestamptz not null default now()
+);
+
+alter table public.producto_variantes enable row level security;
+
+drop policy if exists "todos pueden ver variantes activas" on public.producto_variantes;
+drop policy if exists "admins gestionan variantes de productos" on public.producto_variantes;
+
+create policy "todos pueden ver variantes activas"
+on public.producto_variantes
+for select
+using (activo = true or public.is_admin());
+
+create policy "admins gestionan variantes de productos"
+on public.producto_variantes
+for all
+using (public.is_admin())
+with check (public.is_admin());
+
+alter table public.pedidos
+  add column if not exists actualizado_en timestamptz not null default now();
+
+alter table public.pedido_items
+  add column if not exists variante_id bigint references public.producto_variantes(id);
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'pedidos_estado_check'
+      and conrelid = 'public.pedidos'::regclass
+  ) then
+    alter table public.pedidos drop constraint pedidos_estado_check;
+  end if;
+
+  alter table public.pedidos
+    add constraint pedidos_estado_check
+    check (estado in ('pendiente', 'confirmado', 'entregado', 'cancelado'));
+
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'pedidos_pago_estado_check'
+      and conrelid = 'public.pedidos'::regclass
+  ) then
+    alter table public.pedidos drop constraint pedidos_pago_estado_check;
+  end if;
+
+  alter table public.pedidos
+    add constraint pedidos_pago_estado_check
+    check (
+      pago_estado in (
+        'pendiente',
+        'comprobante_pendiente',
+        'comprobante_recibido',
+        'aprobado',
+        'cancelado'
+      )
+    );
+end;
+$$;
+
+create or replace function public.confirmar_comprobante_admin(p_pedido_id bigint)
+returns public.pedidos
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_pedido public.pedidos;
+begin
+  if not public.is_admin() then
+    raise exception 'Solo un administrador puede confirmar comprobantes.';
+  end if;
+
+  update public.pedidos
+  set
+    pago_estado = 'comprobante_recibido',
+    actualizado_en = now()
+  where id = p_pedido_id
+    and estado not in ('entregado', 'cancelado')
+    and medio_pago = 'transferencia'
+  returning * into v_pedido;
+
+  if not found then
+    raise exception 'No se pudo confirmar el comprobante del pedido.';
+  end if;
+
+  return v_pedido;
+end;
+$$;
+
+grant execute on function public.confirmar_comprobante_admin(bigint) to authenticated;
+
+create or replace function public.marcar_pedido_entregado_admin(p_pedido_id bigint)
+returns public.pedidos
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_pedido public.pedidos;
+begin
+  if not public.is_admin() then
+    raise exception 'Solo un administrador puede marcar pedidos como entregados.';
+  end if;
+
+  select *
+  into v_pedido
+  from public.pedidos
+  where id = p_pedido_id;
+
+  if not found then
+    raise exception 'Pedido no encontrado.';
+  end if;
+
+  if v_pedido.estado = 'cancelado' then
+    raise exception 'No se puede entregar un pedido cancelado.';
+  end if;
+
+  if v_pedido.estado = 'entregado' then
+    return v_pedido;
+  end if;
+
+  if v_pedido.medio_pago = 'transferencia'
+     and v_pedido.pago_estado not in ('comprobante_recibido', 'aprobado') then
+    raise exception 'Primero confirma que recibiste el comprobante.';
+  end if;
+
+  update public.pedidos
+  set
+    estado = 'entregado',
+    actualizado_en = now()
+  where id = p_pedido_id
+  returning * into v_pedido;
+
+  return v_pedido;
+end;
+$$;
+
+grant execute on function public.marcar_pedido_entregado_admin(bigint) to authenticated;
+
+create or replace function public.cancelar_pedido_admin(p_pedido_id bigint)
+returns public.pedidos
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_pedido public.pedidos;
+  v_item record;
+begin
+  if not public.is_admin() then
+    raise exception 'Solo un administrador puede cancelar pedidos.';
+  end if;
+
+  select *
+  into v_pedido
+  from public.pedidos
+  where id = p_pedido_id
+  for update;
+
+  if not found then
+    raise exception 'Pedido no encontrado.';
+  end if;
+
+  if v_pedido.estado = 'cancelado' then
+    return v_pedido;
+  end if;
+
+  if v_pedido.estado = 'entregado' then
+    raise exception 'No se puede cancelar un pedido ya entregado.';
+  end if;
+
+  for v_item in
+    select producto_id, variante_id, cantidad
+    from public.pedido_items
+    where pedido_id = p_pedido_id
+  loop
+    update public.productos
+    set stock = stock + v_item.cantidad
+    where id = v_item.producto_id;
+
+    if v_item.variante_id is not null then
+      update public.producto_variantes
+      set stock = stock + v_item.cantidad
+      where id = v_item.variante_id;
+    end if;
+  end loop;
+
+  update public.pedidos
+  set
+    estado = 'cancelado',
+    pago_estado = 'cancelado',
+    actualizado_en = now()
+  where id = p_pedido_id
+  returning * into v_pedido;
+
+  return v_pedido;
+end;
+$$;
+
+grant execute on function public.cancelar_pedido_admin(bigint) to authenticated;
+
+notify pgrst, 'reload schema';

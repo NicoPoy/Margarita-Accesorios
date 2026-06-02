@@ -35,6 +35,20 @@ function TopActions({
               >
                 Pedidos
               </button>
+              <button
+                className={currentView === 'out-of-stock' ? 'is-active' : ''}
+                type="button"
+                onClick={() => onAdminViewChange('out-of-stock')}
+              >
+                Sin stock
+              </button>
+              <button
+                className={currentView === 'categories' ? 'is-active' : ''}
+                type="button"
+                onClick={() => onAdminViewChange('categories')}
+              >
+                Categorias
+              </button>
             </div>
           )}
           {!isAdmin && isClient && (

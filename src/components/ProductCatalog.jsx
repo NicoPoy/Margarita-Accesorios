@@ -183,6 +183,9 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
             aria-label="Ampliar foto del producto"
           >
             <img src={activeImage} alt={product.name} />
+            <span className="product-detail-image-mark" aria-hidden="true">
+              <img src="/favicon.png" alt="" />
+            </span>
           </button>
           {images.length > 1 && (
             <div>

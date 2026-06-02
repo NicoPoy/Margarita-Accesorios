@@ -34,6 +34,7 @@ Ejecutar en este orden:
 - `17_order_snapshot_trigger.sql`: version corta para snapshots de productos comprados y confirmacion de comprobante.
 - `18_product_options_order_snapshots.sql`: migracion final para multiples fotos, colores/modelos opcionales, snapshots de pedidos y RPCs actualizadas.
 - `19_unified_product_varieties.sql`: unifica colores/modelos como variedades con stock propio por variedad.
+- `20_order_status_cancel_stock.sql`: agrega estados claros de pedidos, confirmacion de comprobante, entrega y cancelacion con devolucion de stock.
 
 ## Modelo incluido
 
@@ -52,9 +53,11 @@ Ejecutar en este orden:
 - RPC `eliminar_producto_admin` para eliminacion logica de productos
 - RPC `actualizar_producto_admin` para modificar productos
 - RPC `marcar_pedido_entregado_admin` para actualizar entregas de pedidos
+- RPC `confirmar_comprobante_admin` para validar pagos por transferencia
+- RPC `cancelar_pedido_admin` para cancelar pedidos y devolver stock
 - columnas de pedido: `estado`, `medio_pago`, `pago_estado`, `total`
 - subtotal por item guardado en `pedido_items.subtotal`
 - multiples imagenes por producto en `productos.imagenes_url`
-- colores y modelos opcionales en `productos.colores` y `productos.modelos`
-- color/modelo elegido en `pedido_items.color` y `pedido_items.modelo`
+- variedades opcionales por producto en `producto_variantes`
+- variedad elegida en `pedido_items.variedad`
 - snapshot de producto comprado en `pedido_items.producto_nombre`, `producto_categoria`, `producto_imagen_url`

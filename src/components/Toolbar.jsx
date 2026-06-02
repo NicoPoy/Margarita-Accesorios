@@ -1,6 +1,21 @@
 import React from 'react';
 
-function Toolbar({ activeCategory, categories, query, onCategoryChange, onQueryChange }) {
+const sortOptions = [
+  { value: 'name-asc', label: 'Nombre A-Z' },
+  { value: 'price-asc', label: 'Menor precio' },
+  { value: 'price-desc', label: 'Mayor precio' },
+  { value: 'stock-desc', label: 'Mas stock' }
+];
+
+function Toolbar({
+  activeCategory,
+  categories,
+  query,
+  sortOrder,
+  onCategoryChange,
+  onQueryChange,
+  onSortOrderChange
+}) {
   return (
     <section className="toolbar" aria-label="Filtros del catalogo">
       <label className="search-field">
@@ -21,6 +36,20 @@ function Toolbar({ activeCategory, categories, query, onCategoryChange, onQueryC
           {categories.map((category) => (
             <option key={category} value={category}>
               {category}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="select-field">
+        <span>Ordenar por</span>
+        <select
+          value={sortOrder}
+          onChange={(event) => onSortOrderChange(event.target.value)}
+        >
+          {sortOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>

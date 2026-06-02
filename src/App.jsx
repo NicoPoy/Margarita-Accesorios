@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import AdminCategories from './components/AdminCategories';
 import AdminOrders from './components/AdminOrders';
+import AdminOutOfStock from './components/AdminOutOfStock';
 import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import CartDrawer from './components/CartDrawer';
@@ -96,6 +98,8 @@ const mapDatabaseOrder = (order) => ({
   },
   items: (order.pedido_items || []).map((item) => ({
     id: item.id,
+    productId: item.producto_id,
+    variantId: item.variante_id,
     quantity: Number(item.cantidad || 0),
     unitPrice: Number(item.precio_unitario || 0),
     subtotal:
@@ -162,6 +166,7 @@ function App() {
   const [catalogCategories, setCatalogCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [query, setQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState('name-asc');
   const [authMode, setAuthMode] = useState('login');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [session, setSession] = useState(null);
@@ -243,7 +248,6 @@ function App() {
           supabase
             .from('categorias')
             .select('id, nombre, activo')
-            .eq('activo', true)
             .order('nombre', { ascending: true }),
           supabase
             .from('productos')
@@ -338,7 +342,7 @@ function App() {
   const filteredProducts = useMemo(() => {
     const search = query.trim().toLowerCase();
 
-    return activeProducts.filter((product) => {
+    const products = activeProducts.filter((product) => {
       const matchesCategory =
         activeCategory === 'Todos' || product.category === activeCategory;
       const matchesSearch =
@@ -348,7 +352,17 @@ function App() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, activeProducts, query]);
+
+    return [...products].sort((a, b) => {
+      if (sortOrder === 'price-asc') return a.price - b.price;
+      if (sortOrder === 'price-desc') return b.price - a.price;
+      if (sortOrder === 'stock-desc') {
+        return (b.availableStock ?? b.stock) - (a.availableStock ?? a.stock);
+      }
+
+      return a.name.localeCompare(b.name);
+    });
+  }, [activeCategory, activeProducts, query, sortOrder]);
 
   const loadAdminOrders = async () => {
     setOrdersStatus('');
@@ -363,7 +377,7 @@ function App() {
     const { data, error } = await supabase
       .from('pedidos')
       .select(
-        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, variedad, color, modelo, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
+        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, producto_id, variante_id, cantidad, precio_unitario, subtotal, variedad, color, modelo, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
       )
       .order('fecha', { ascending: false });
 
@@ -390,7 +404,7 @@ function App() {
     const { data, error } = await supabase
       .from('pedidos')
       .select(
-        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, cantidad, precio_unitario, subtotal, variedad, color, modelo, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
+        'id, fecha, estado, medio_pago, pago_estado, total, usuarios(nombre, whatsapp, dni), pedido_items(id, producto_id, variante_id, cantidad, precio_unitario, subtotal, variedad, color, modelo, producto_nombre, producto_categoria, producto_imagen_url, productos(nombre, categoria, imagen_url, categorias(nombre)))'
       )
       .eq('usuario_id', session.user.id)
       .order('fecha', { ascending: false });
@@ -440,6 +454,7 @@ function App() {
     setEditingProduct(null);
     setCheckoutMessage('');
     setOrdersStatus('');
+    setAdminMessage('');
   };
 
   const openClientView = (view) => {
@@ -749,6 +764,163 @@ function App() {
     setAdminMessage('Producto eliminado del catalogo.');
   };
 
+  const editProduct = (product) => {
+    setEditingProduct(product);
+    setCurrentView('catalog');
+  };
+
+  const productCountsByCategory = useMemo(
+    () =>
+      catalogProducts.reduce((counts, product) => {
+        if (!product.categoryId) return counts;
+
+        return {
+          ...counts,
+          [product.categoryId]: (counts[product.categoryId] || 0) + 1
+        };
+      }, {}),
+    [catalogProducts]
+  );
+
+  const createCategory = async (name) => {
+    setAdminMessage('');
+
+    if (!hasSupabaseConfig) {
+      setAdminMessage('Falta configurar Supabase para guardar categorias.');
+      return false;
+    }
+
+    const cleanName = name.trim();
+
+    if (!window.confirm(`Confirmas que queres crear la categoria "${cleanName}"?`)) {
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('categorias')
+      .insert({ nombre: cleanName, activo: true })
+      .select('id, nombre, activo')
+      .single();
+
+    if (error) {
+      setAdminMessage(`No se pudo crear la categoria: ${error.message}`);
+      return false;
+    }
+
+    setCatalogCategories((currentCategories) =>
+      [...currentCategories, mapDatabaseCategory(data)].sort((a, b) =>
+        a.name.localeCompare(b.name)
+      )
+    );
+    setAdminMessage('Categoria creada correctamente.');
+    return true;
+  };
+
+  const renameCategory = async (category, name) => {
+    setAdminMessage('');
+
+    if (!hasSupabaseConfig) {
+      setAdminMessage('Falta configurar Supabase para modificar categorias.');
+      return false;
+    }
+
+    const cleanName = name.trim();
+
+    if (cleanName === category.name) {
+      return true;
+    }
+
+    if (!window.confirm(`Confirmas que queres renombrar "${category.name}" como "${cleanName}"?`)) {
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('categorias')
+      .update({ nombre: cleanName })
+      .eq('id', category.id)
+      .select('id, nombre, activo')
+      .single();
+
+    if (error) {
+      setAdminMessage(`No se pudo modificar la categoria: ${error.message}`);
+      return false;
+    }
+
+    await supabase
+      .from('productos')
+      .update({ categoria: cleanName })
+      .eq('categoria_id', category.id);
+
+    const updatedCategory = mapDatabaseCategory(data);
+
+    setCatalogCategories((currentCategories) =>
+      currentCategories
+        .map((currentCategory) =>
+          currentCategory.id === updatedCategory.id ? updatedCategory : currentCategory
+        )
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
+
+    setCatalogProducts((currentProducts) =>
+      currentProducts.map((product) =>
+        product.categoryId === category.id ? { ...product, category: cleanName } : product
+      )
+    );
+
+    if (activeCategory === category.name) {
+      setActiveCategory(cleanName);
+    }
+
+    setAdminMessage('Categoria modificada correctamente.');
+    return true;
+  };
+
+  const toggleCategory = async (category) => {
+    setAdminMessage('');
+
+    if (!hasSupabaseConfig) {
+      setAdminMessage('Falta configurar Supabase para modificar categorias.');
+      return;
+    }
+
+    const nextActive = !category.active;
+    const actionLabel = nextActive ? 'activar' : 'desactivar';
+
+    if (!window.confirm(`Confirmas que queres ${actionLabel} la categoria "${category.name}"?`)) {
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('categorias')
+      .update({ activo: nextActive })
+      .eq('id', category.id)
+      .select('id, nombre, activo')
+      .single();
+
+    if (error) {
+      setAdminMessage(`No se pudo modificar la categoria: ${error.message}`);
+      return;
+    }
+
+    const updatedCategory = mapDatabaseCategory(data);
+
+    setCatalogCategories((currentCategories) =>
+      currentCategories
+        .map((currentCategory) =>
+          currentCategory.id === updatedCategory.id ? updatedCategory : currentCategory
+        )
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
+
+    if (!nextActive && activeCategory === category.name) {
+      setActiveCategory('Todos');
+    }
+
+    setAdminMessage(
+      nextActive ? 'Categoria activada correctamente.' : 'Categoria desactivada correctamente.'
+    );
+  };
+
   const changeProductStock = (productId, delta, variantId = null) => {
     setCatalogProducts((currentProducts) =>
       currentProducts.map((product) =>
@@ -990,6 +1162,76 @@ function App() {
     );
   };
 
+  const cancelOrder = async (orderId) => {
+    setOrdersStatus('');
+
+    if (!hasSupabaseConfig) {
+      setOrdersStatus('Falta configurar Supabase para cancelar pedidos.');
+      return;
+    }
+
+    const orderToCancel = adminOrders.find((order) => order.id === orderId);
+
+    if (!window.confirm(`Confirmas que queres cancelar el pedido #${orderId}? Se devolvera el stock.`)) {
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('cancelar_pedido_admin', {
+      p_pedido_id: orderId
+    });
+
+    if (error) {
+      setOrdersStatus(`No se pudo cancelar el pedido: ${error.message}`);
+      return;
+    }
+
+    setAdminOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order.id === orderId
+          ? {
+              ...order,
+              status: data?.estado || 'cancelado',
+              paymentStatus: data?.pago_estado || order.paymentStatus
+            }
+          : order
+      )
+    );
+
+    if (orderToCancel) {
+      setCatalogProducts((currentProducts) =>
+        currentProducts.map((product) => {
+          const restoredItems = orderToCancel.items.filter(
+            (item) => item.productId === product.id
+          );
+
+          if (!restoredItems.length) return product;
+
+          const restoredStock = restoredItems.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+          );
+
+          return {
+            ...product,
+            stock: product.stock + restoredStock,
+            availableStock: (product.availableStock ?? product.stock) + restoredStock,
+            variants: product.variants.map((variant) => {
+              const restoredVariantStock = restoredItems
+                .filter((item) => item.variantId === variant.id)
+                .reduce((sum, item) => sum + item.quantity, 0);
+
+              return restoredVariantStock
+                ? { ...variant, stock: variant.stock + restoredVariantStock }
+                : variant;
+            })
+          };
+        })
+      );
+    }
+
+    setOrdersStatus(`Pedido #${orderId} cancelado. Stock devuelto correctamente.`);
+  };
+
   return (
     <main className="page-shell">
       <TopActions
@@ -1014,8 +1256,10 @@ function App() {
             activeCategory={activeCategory}
             categories={categories}
             query={query}
+            sortOrder={sortOrder}
             onCategoryChange={setActiveCategory}
             onQueryChange={setQuery}
+            onSortOrderChange={setSortOrder}
           />
 
           {productsStatus && <p className="catalog-status">{productsStatus}</p>}
@@ -1027,12 +1271,28 @@ function App() {
           categories={catalogCategories}
           editingProduct={editingProduct}
           message={adminMessage}
-          outOfStockProducts={outOfStockProducts}
           onCancelEdit={() => setEditingProduct(null)}
           onCreateProduct={createProduct}
-          onDeleteProduct={deleteProduct}
-          onEditProduct={setEditingProduct}
           onUpdateProduct={updateProduct}
+        />
+      )}
+
+      {currentView === 'out-of-stock' && isAdmin && (
+        <AdminOutOfStock
+          products={outOfStockProducts}
+          onDeleteProduct={deleteProduct}
+          onEditProduct={editProduct}
+        />
+      )}
+
+      {currentView === 'categories' && isAdmin && (
+        <AdminCategories
+          categories={catalogCategories}
+          message={adminMessage}
+          productCounts={productCountsByCategory}
+          onCreateCategory={createCategory}
+          onRenameCategory={renameCategory}
+          onToggleCategory={toggleCategory}
         />
       )}
 
@@ -1041,6 +1301,7 @@ function App() {
           isLoading={isLoadingOrders}
           message={ordersStatus}
           orders={adminOrders}
+          onCancelOrder={cancelOrder}
           onMarkDelivered={markOrderDelivered}
           onPaymentReceived={confirmOrderPaymentReceived}
           onRefresh={loadAdminOrders}
@@ -1059,12 +1320,12 @@ function App() {
       ) : currentView === 'catalog' ? (
         <ProductCatalog
           activeCategory={activeCategory}
-          canAddToCart={Boolean(session) && !isAdmin}
+          canAddToCart={!isAdmin}
           canManageProducts={isAdmin}
           products={filteredProducts}
           onAddToCart={addToCart}
           onDeleteProduct={deleteProduct}
-          onEditProduct={setEditingProduct}
+          onEditProduct={editProduct}
         />
       ) : (
         <CheckoutView

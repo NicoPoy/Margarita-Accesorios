@@ -29,6 +29,17 @@ const formatPaymentStatus = (value) => {
   return labels[value] || `Pago: ${value || 'pendiente'}`;
 };
 
+const formatOrderStatus = (value) => {
+  const labels = {
+    pendiente: 'Entrega pendiente',
+    confirmado: 'Confirmado',
+    entregado: 'Entregado',
+    cancelado: 'Cancelado'
+  };
+
+  return labels[value] || value || 'Pendiente';
+};
+
 function AdminOrders({
   badge = 'Solo admin',
   emptyText = 'Todavia no hay pedidos cargados.',
@@ -37,6 +48,7 @@ function AdminOrders({
   orders,
   showCustomer = true,
   title = 'Pedidos',
+  onCancelOrder,
   onMarkDelivered,
   onPaymentReceived,
   onRefresh
@@ -53,7 +65,11 @@ function AdminOrders({
         </button>
       </div>
 
-      {message && <p className="admin-message error">{message}</p>}
+      {message && (
+        <p className={`admin-message ${message.startsWith('Pedido #') ? 'success' : 'error'}`}>
+          {message}
+        </p>
+      )}
 
       {isLoading ? (
         <p className="admin-empty">Cargando pedidos...</p>
@@ -63,14 +79,23 @@ function AdminOrders({
         <div className="orders-list">
           {orders.map((order) => {
             const isDelivered = order.status === 'entregado';
+            const isCanceled = order.status === 'cancelado';
             const needsTransferReceipt =
               order.paymentMethod === 'transferencia' &&
               order.paymentStatus !== 'comprobante_recibido' &&
               order.paymentStatus !== 'aprobado';
-            const canDeliver = !needsTransferReceipt;
+            const canDeliver = !needsTransferReceipt && !isCanceled;
+            const statusClass = isCanceled
+              ? 'status-canceled'
+              : isDelivered
+                ? 'status-delivered'
+                : 'status-pending';
 
             return (
-              <article className="order-card" key={order.id}>
+              <article
+                className={`order-card ${isCanceled ? 'order-card-canceled' : ''}`}
+                key={order.id}
+              >
                 <div className="order-card-header">
                   <div>
                     <span>Pedido #{order.id}</span>
@@ -89,8 +114,8 @@ function AdminOrders({
 
                   <div className="order-status-box">
                     <strong>{formatPrice(order.total)}</strong>
-                    <span className={isDelivered ? 'status-delivered' : 'status-pending'}>
-                      {isDelivered ? 'Entregado' : 'Entrega pendiente'}
+                    <span className={statusClass}>
+                      {formatOrderStatus(order.status)}
                     </span>
                   </div>
                 </div>
@@ -129,7 +154,7 @@ function AdminOrders({
                   <span>
                     {order.items.reduce((sum, item) => sum + item.quantity, 0)} productos
                   </span>
-                  {onMarkDelivered && !isDelivered && (
+                  {onMarkDelivered && !isDelivered && !isCanceled && (
                     <div className="order-actions">
                       {needsTransferReceipt && onPaymentReceived && (
                         <button
@@ -148,6 +173,15 @@ function AdminOrders({
                       >
                         Marcar como entregado
                       </button>
+                      {onCancelOrder && (
+                        <button
+                          className="admin-danger-button"
+                          type="button"
+                          onClick={() => onCancelOrder(order.id)}
+                        >
+                          Cancelar pedido
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
