@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
+import { BankIcon, CashIcon, CheckIcon } from './icons';
 import { formatPrice } from '../utils/formatters';
 
 const WHATSAPP_NUMBER = '+54 9 2226 60-6589';
@@ -8,19 +9,20 @@ const paymentOptions = [
   {
     id: 'efectivo',
     title: 'Efectivo',
-    description: `Comunicarse al WhatsApp ${WHATSAPP_NUMBER} para coordinar el pago y la entrega.`
+    Icon: CashIcon
   },
   {
     id: 'transferencia',
     title: 'Transferencia',
-    description: 'Comunicarse al WhatsApp para coordinar la entrega.',
-    alias: TRANSFER_ALIAS
+    alias: TRANSFER_ALIAS,
+    Icon: BankIcon
   },
   {
     id: 'mercado_pago',
     title: 'Mercado Pago',
     description: 'Proximamente',
-    disabled: true
+    disabled: true,
+    iconImage: '/mercado-pago-icon.png'
   }
 ];
 
@@ -43,32 +45,60 @@ function CheckoutView({
 
       <div className="checkout-layout">
         <div className="payment-options">
-          {paymentOptions.map((option) => (
-            <button
-              className={`payment-option ${selectedMethod === option.id ? 'is-selected' : ''} ${
-                option.disabled ? 'is-disabled' : ''
-              }`}
-              disabled={option.disabled}
-              key={option.id}
-              type="button"
-              onClick={() => setSelectedMethod(option.id)}
-            >
-              <strong>
-                {option.title}
-                {option.disabled && <em>Proximamente</em>}
-              </strong>
-              {option.alias ? (
-                <span>
-                  Alias: <b>{option.alias}</b>. {option.description}
+          {paymentOptions.map((option) => {
+            const isSelected = selectedMethod === option.id;
+            const Icon = option.Icon;
+
+            return (
+              <button
+                className={`payment-option ${isSelected ? 'is-selected' : ''} ${
+                  option.disabled ? 'is-disabled' : ''
+                }`}
+                disabled={option.disabled}
+                key={option.id}
+                type="button"
+                onClick={() => setSelectedMethod(option.id)}
+              >
+                <span className="payment-option-copy">
+                  <strong>
+                    {option.title}
+                    {option.disabled && <em>Proximamente</em>}
+                  </strong>
+                  {option.alias ? (
+                    <span>
+                      Alias: <b>{option.alias}</b>
+                    </span>
+                  ) : option.description ? (
+                    <span>{option.description}</span>
+                  ) : null}
                 </span>
-              ) : (
-                <span>{option.description}</span>
-              )}
-            </button>
-          ))}
+
+                <span className="payment-option-side">
+                  {isSelected && (
+                    <span className="payment-selected-check">
+                      <CheckIcon />
+                    </span>
+                  )}
+                  <span className="payment-option-icon">
+                    {option.iconImage ? (
+                      <img src={option.iconImage} alt="" aria-hidden="true" />
+                    ) : (
+                      <Icon />
+                    )}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
 
           <p className="delivery-note">
-            Las entregas se realizan presencialmente en La Plata o Cañuelas.
+            Para coordinar la entrega, comunicarse al WhatsApp {WHATSAPP_NUMBER}.
+             <br />
+            Si pagas por transferencia, envia el comprobante por la misma via.
+          </p>
+
+          <p className="delivery-note">
+            Las entregas se realizan presencialmente en La Plata o Canuelas.
           </p>
 
           {checkoutMessage && <p className="checkout-message">{checkoutMessage}</p>}
