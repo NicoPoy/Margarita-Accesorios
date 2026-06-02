@@ -153,12 +153,12 @@ h1 {
 .login-button {
   min-height: 42px;
   flex: 0 0 auto;
-  border: 1px solid rgba(139, 38, 53, 0.18);
+  border: 1px solid rgba(216, 101, 136, 0.28);
   border-radius: 999px;
   padding: 0 20px;
-  background: linear-gradient(135deg, #8b2635, var(--rose-500));
+  background: #c95f83;
   color: #fff;
-  box-shadow: 0 12px 26px rgba(139, 38, 53, 0.22);
+  box-shadow: 0 10px 24px rgba(184, 75, 112, 0.22);
   font-size: 0.92rem;
   font-weight: 900;
   transition: 160ms ease;
@@ -166,8 +166,8 @@ h1 {
 }
 
 .login-button:hover {
-  border-color: rgba(139, 38, 53, 0.26);
-  background: linear-gradient(135deg, #751f32, #c65378);
+  border-color: rgba(184, 75, 112, 0.42);
+  background: #b84b70;
   color: #fff;
   transform: translateY(-1px);
 }
