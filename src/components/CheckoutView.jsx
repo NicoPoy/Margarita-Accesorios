@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { formatPrice } from '../utils/formatters';
 
 const WHATSAPP_NUMBER = '+54 9 2226 60-6589';
-const TRANSFER_ALIAS = 'alias.lourdes';
+const TRANSFER_ALIAS = 'lourdes.124.bares.mp';
 
 const paymentOptions = [
   {
@@ -13,12 +13,14 @@ const paymentOptions = [
   {
     id: 'transferencia',
     title: 'Transferencia',
-    description: `Alias: ${TRANSFER_ALIAS}`
+    description: 'Comunicarse al WhatsApp para coordinar la entrega.',
+    alias: TRANSFER_ALIAS
   },
   {
     id: 'mercado_pago',
     title: 'Mercado Pago',
-    description: 'Paga online desde un link seguro de Mercado Pago.'
+    description: 'Proximamente',
+    disabled: true
   }
 ];
 
@@ -43,19 +45,30 @@ function CheckoutView({
         <div className="payment-options">
           {paymentOptions.map((option) => (
             <button
-              className={`payment-option ${selectedMethod === option.id ? 'is-selected' : ''}`}
+              className={`payment-option ${selectedMethod === option.id ? 'is-selected' : ''} ${
+                option.disabled ? 'is-disabled' : ''
+              }`}
+              disabled={option.disabled}
               key={option.id}
               type="button"
               onClick={() => setSelectedMethod(option.id)}
             >
-              <strong>{option.title}</strong>
-              <span>{option.description}</span>
+              <strong>
+                {option.title}
+                {option.disabled && <em>Proximamente</em>}
+              </strong>
+              {option.alias ? (
+                <span>
+                  Alias: <b>{option.alias}</b>. {option.description}
+                </span>
+              ) : (
+                <span>{option.description}</span>
+              )}
             </button>
           ))}
 
-          <p className="payment-proof-note">
-            En caso de transferencia o Mercado Pago, y para coordinar la entrega,
-            enviar el comprobante al WhatsApp {WHATSAPP_NUMBER}.
+          <p className="delivery-note">
+            Las entregas se realizan presencialmente en La Plata o Cañuelas.
           </p>
 
           {checkoutMessage && <p className="checkout-message">{checkoutMessage}</p>}

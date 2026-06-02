@@ -435,9 +435,35 @@ h1 {
   box-shadow: 0 10px 24px rgba(123, 41, 68, 0.08);
 }
 
+.payment-option.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.payment-option.is-disabled:hover {
+  border-color: rgba(216, 101, 136, 0.18);
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: none;
+}
+
 .payment-option strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   color: var(--rose-900);
   font-size: 1.05rem;
+}
+
+.payment-option em {
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(216, 101, 136, 0.12);
+  color: var(--rose-700);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .payment-option span,
@@ -446,11 +472,23 @@ h1 {
   line-height: 1.45;
 }
 
+.payment-option span b {
+  color: var(--rose-900);
+  font-weight: 950;
+}
+
+.delivery-note,
 .payment-proof-note,
 .checkout-message {
   border-radius: 8px;
   padding: 12px 14px;
   background: rgba(255, 240, 244, 0.72);
+}
+
+.delivery-note {
+  border: 1px solid rgba(216, 101, 136, 0.18);
+  color: var(--rose-900);
+  font-weight: 800;
 }
 
 .checkout-message {
