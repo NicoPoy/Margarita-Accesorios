@@ -31,6 +31,9 @@ function ProductCard({
 
   return (
     <article className="product-card">
+      <span className="product-card-mark" aria-hidden="true">
+        <img src="/favicon.png" alt="" />
+      </span>
       <div className="product-image">
         <button type="button" onClick={() => onOpenDetail(product)}>
           <img src={mainImage} alt={product.name} />
@@ -158,13 +161,20 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
   const needsSelection = hasVarieties && !selectedVariety;
   const totalAvailableStock = product.availableStock ?? product.stock;
   const selectedStock = selectedVariant ? selectedVariant.stock : totalAvailableStock;
+  const handleClose = () => {
+    setZoomImage(null);
+    onClose();
+  };
 
   return (
     <div className="product-detail-backdrop" role="presentation">
       <article className="product-detail" role="dialog" aria-modal="true">
-        <button className="product-detail-close" type="button" onClick={onClose}>
+        <button className="product-detail-close" type="button" onClick={handleClose}>
           x
         </button>
+        <span className="product-detail-mark" aria-hidden="true">
+          <img src="/favicon.png" alt="" />
+        </span>
         <div className="product-detail-gallery">
           <button
             className="product-detail-main-image"
