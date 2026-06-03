@@ -1,6 +1,7 @@
 import React from 'react';
-import { CartIcon } from './icons';
+import { CartIcon, WhatsAppIcon } from './icons';
 import { formatPrice } from '../utils/formatters';
+import { buildWhatsAppUrl } from '../utils/contact';
 
 function CartDrawer({
   cartItems,
@@ -78,6 +79,15 @@ function CartDrawer({
               <button type="button" className="cart-checkout" onClick={onCheckout}>
                 Ir a pagar
               </button>
+              <a
+                className="cart-whatsapp"
+                href={buildWhatsAppUrl('Hola, quiero consultar por mi carrito en Accesorios Margarita.')}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <WhatsAppIcon />
+                Consultar por WhatsApp
+              </a>
               <button type="button" className="cart-clear" onClick={onClear}>
                 Vaciar carrito
               </button>

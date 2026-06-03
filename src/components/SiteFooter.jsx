@@ -1,5 +1,6 @@
 import React from 'react';
 import { InstagramIcon, WhatsAppIcon } from './icons';
+import { buildWhatsAppUrl, WHATSAPP_NUMBER } from '../utils/contact';
 
 function SiteFooter() {
   return (
@@ -15,9 +16,13 @@ function SiteFooter() {
         </div>
 
         <nav className="contact-links" aria-label="Datos de contacto">
-          <a href="https://wa.me/5492226606589" target="_blank" rel="noreferrer">
+          <a
+            href={buildWhatsAppUrl('Hola, quiero consultar por productos de Accesorios Margarita.')}
+            target="_blank"
+            rel="noreferrer"
+          >
             <WhatsAppIcon />
-            <span>+54 9 2226 60-6589</span>
+            <span>{WHATSAPP_NUMBER}</span>
           </a>
           <a
             href="https://www.instagram.com/accesorios.margarita.2026"

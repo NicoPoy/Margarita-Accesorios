@@ -1,6 +1,8 @@
 import React from 'react';
+import { WhatsAppIcon } from './icons';
 import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import { formatPrice } from '../utils/formatters';
+import { buildWhatsAppUrl, orderWhatsAppMessage } from '../utils/contact';
 
 const formatDate = (value) =>
   new Intl.DateTimeFormat('es-AR', {
@@ -54,6 +56,23 @@ function AdminOrders({
   onPaymentReceived,
   onRefresh
 }) {
+  const groupedOrders = showCustomer
+    ? [{ title: null, orders }]
+    : [
+        {
+          title: 'Pedidos activos',
+          orders: orders.filter((order) => order.status !== 'entregado' && order.status !== 'cancelado')
+        },
+        {
+          title: 'Pedidos entregados',
+          orders: orders.filter((order) => order.status === 'entregado')
+        },
+        {
+          title: 'Pedidos cancelados',
+          orders: orders.filter((order) => order.status === 'cancelado')
+        }
+      ].filter((group) => group.orders.length > 0);
+
   return (
     <section className="admin-orders">
       <div className="admin-orders-heading">
@@ -85,7 +104,10 @@ function AdminOrders({
         <p className="admin-empty">{emptyText}</p>
       ) : (
         <div className="orders-list">
-          {orders.map((order) => {
+          {groupedOrders.map((group) => (
+            <div className="orders-group" key={group.title || 'todos'}>
+              {group.title && <h3>{group.title}</h3>}
+              {group.orders.map((order) => {
             const isDelivered = order.status === 'entregado';
             const isCanceled = order.status === 'cancelado';
             const needsTransferReceipt =
@@ -162,6 +184,31 @@ function AdminOrders({
                   <span>
                     {order.items.reduce((sum, item) => sum + item.quantity, 0)} productos
                   </span>
+                  {!showCustomer && (
+                    <a
+                      className="order-whatsapp"
+                      href={buildWhatsAppUrl(orderWhatsAppMessage(order.id))}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <WhatsAppIcon />
+                      Coordinar entrega
+                    </a>
+                  )}
+                  {showCustomer && order.customer.whatsapp && (
+                    <a
+                      className="order-whatsapp"
+                      href={buildWhatsAppUrl(
+                        `Hola ${order.customer.name}, te escribo de Accesorios Margarita por tu pedido #${order.id}.`,
+                        order.customer.whatsapp
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <WhatsAppIcon />
+                      Escribir al cliente
+                    </a>
+                  )}
                   {onMarkDelivered && !isDelivered && !isCanceled && (
                     <div className="order-actions">
                       {needsTransferReceipt && onPaymentReceived && (
@@ -195,7 +242,9 @@ function AdminOrders({
                 </div>
               </article>
             );
-          })}
+              })}
+            </div>
+          ))}
         </div>
       )}
     </section>

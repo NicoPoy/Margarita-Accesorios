@@ -12,6 +12,7 @@ function ProductCard({
   onEditProduct
 }) {
   const [selectedVariety, setSelectedVariety] = useState('');
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const hasVarieties = product.varieties?.length > 0;
   const selectedVariant = product.variants?.find(
     (variant) => variant.name === selectedVariety
@@ -19,7 +20,23 @@ function ProductCard({
   const totalAvailableStock = product.availableStock ?? product.stock;
   const selectedStock = selectedVariant ? selectedVariant.stock : totalAvailableStock;
   const needsSelection = hasVarieties && !selectedVariety;
-  const mainImage = product.images?.[0] || product.image || DEFAULT_PRODUCT_IMAGE;
+  const productImages = product.images?.length
+    ? product.images
+    : [product.image || DEFAULT_PRODUCT_IMAGE];
+  const mainImage = productImages[activeImageIndex] || productImages[0];
+  const hasMultipleImages = productImages.length > 1;
+
+  const changeImage = (event, direction) => {
+    event.stopPropagation();
+    setActiveImageIndex((currentIndex) =>
+      (currentIndex + direction + productImages.length) % productImages.length
+    );
+  };
+
+  const selectImage = (event, imageIndex) => {
+    event.stopPropagation();
+    setActiveImageIndex(imageIndex);
+  };
 
   const handleAddToCart = () => {
     if (needsSelection) return;
@@ -38,6 +55,37 @@ function ProductCard({
         <button type="button" onClick={() => onOpenDetail(product)}>
           <img src={mainImage} alt={product.name} />
         </button>
+        {hasMultipleImages && (
+          <>
+            <button
+              className="product-image-nav product-image-nav-left"
+              type="button"
+              onClick={(event) => changeImage(event, -1)}
+              aria-label="Ver foto anterior"
+            >
+              ‹
+            </button>
+            <button
+              className="product-image-nav product-image-nav-right"
+              type="button"
+              onClick={(event) => changeImage(event, 1)}
+              aria-label="Ver foto siguiente"
+            >
+              ›
+            </button>
+            <div className="product-image-dots">
+              {productImages.map((image, imageIndex) => (
+                <button
+                  className={imageIndex === activeImageIndex ? 'is-active' : ''}
+                  key={`${image}-${imageIndex}`}
+                  type="button"
+                  onClick={(event) => selectImage(event, imageIndex)}
+                  aria-label={`Ver foto ${imageIndex + 1} de ${product.name}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
       <div className="product-info">
         <p>{product.category}</p>

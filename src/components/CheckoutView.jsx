@@ -1,8 +1,8 @@
 ﻿import React, { useState } from 'react';
-import { BankIcon, CashIcon, CheckIcon } from './icons';
+import { BankIcon, CashIcon, CheckIcon, WhatsAppIcon } from './icons';
 import { formatPrice } from '../utils/formatters';
+import { buildWhatsAppUrl, orderWhatsAppMessage, WHATSAPP_NUMBER } from '../utils/contact';
 
-const WHATSAPP_NUMBER = '+54 9 2226 60-6589';
 const TRANSFER_ALIAS = 'lourdes.124.bares.mp';
 
 const paymentOptions = [
@@ -96,6 +96,16 @@ function CheckoutView({
              <br />
             Si pagas por transferencia, envia el comprobante por la misma via.
           </p>
+
+          <a
+            className="checkout-whatsapp"
+            href={buildWhatsAppUrl(orderWhatsAppMessage())}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <WhatsAppIcon />
+            Escribir por WhatsApp
+          </a>
 
           <p className="delivery-note">
             Las entregas se realizan presencialmente en La Plata o Canuelas.

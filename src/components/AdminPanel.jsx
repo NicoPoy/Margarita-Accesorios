@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
+import { compressImageToWebp } from '../utils/imageCompression';
+
+const MAX_IMAGE_SIZE_MB = 1.5;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+const MAX_PRODUCT_PHOTOS = 4;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const initialForm = {
   name: '',
@@ -202,10 +208,57 @@ function AdminPanel({
     }));
   };
 
-  const addPhotoFiles = (files) => {
+  const addPhotoFiles = async (files) => {
     const newFiles = Array.from(files || []);
 
     if (!newFiles.length) return;
+
+    const invalidTypeFiles = newFiles.filter(
+      (file) => !ALLOWED_IMAGE_TYPES.includes(file.type)
+    );
+
+    if (invalidTypeFiles.length) {
+      setLocalError('Solo se permiten imagenes JPG, PNG o WEBP.');
+      return;
+    }
+
+    const currentPhotoCount =
+      (isEditing ? currentPhotoPreviews.filter((image) => image !== DEFAULT_PRODUCT_IMAGE).length : 0) +
+      form.photos.length;
+
+    if (currentPhotoCount >= MAX_PRODUCT_PHOTOS) {
+      setLocalError(`Cada producto puede tener hasta ${MAX_PRODUCT_PHOTOS} fotos.`);
+      return;
+    }
+
+    const availableSlots = MAX_PRODUCT_PHOTOS - currentPhotoCount;
+    const filesToProcess = newFiles.slice(0, availableSlots);
+
+    if (newFiles.length > availableSlots) {
+      setLocalError(`Solo se agregaron ${availableSlots} foto(s). El maximo es ${MAX_PRODUCT_PHOTOS}.`);
+    } else {
+      setLocalError('');
+    }
+
+    let compressedFiles;
+
+    try {
+      compressedFiles = await Promise.all(filesToProcess.map(compressImageToWebp));
+    } catch (error) {
+      setLocalError(`No se pudo optimizar la imagen: ${error.message}`);
+      return;
+    }
+
+    const oversizedFiles = compressedFiles.filter((file) => file.size > MAX_IMAGE_SIZE_BYTES);
+
+    if (oversizedFiles.length) {
+      setLocalError(
+        `Despues de optimizar, cada foto puede pesar hasta ${MAX_IMAGE_SIZE_MB} MB. Revisa: ${oversizedFiles
+          .map((file) => file.name)
+          .join(', ')}.`
+      );
+      return;
+    }
 
     setForm((currentForm) => {
       const knownFiles = new Set(
@@ -213,7 +266,7 @@ function AdminPanel({
           (photo) => `${photo.file.name}-${photo.file.size}-${photo.file.lastModified}`
         )
       );
-      const uniqueNewFiles = newFiles.filter(
+      const uniqueNewFiles = compressedFiles.filter(
         (file) => !knownFiles.has(`${file.name}-${file.size}-${file.lastModified}`)
       );
       const nextPhotos = uniqueNewFiles.map((file) => ({
@@ -305,32 +358,38 @@ function AdminPanel({
       </div>
 
       <form className="admin-form" onSubmit={handleSubmit}>
-          <label>
-            <span>Nombre</span>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(event) => updateField('name', event.target.value)}
-              placeholder="Ej: Aros perlados"
-            />
-          </label>
+        <div className="admin-form-section admin-form-main-section">
+          <div className="admin-section-title">
+            <span>Datos principales</span>
+            <small>Informacion base para mostrar el producto en el catalogo.</small>
+          </div>
 
-          <label>
-            <span>Categoria</span>
-            <select
-              value={form.categoryId}
-              onChange={(event) => updateField('categoryId', event.target.value)}
-            >
-              <option value="">Seleccionar categoria</option>
-              {categoryOptions.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="admin-basic-grid">
+            <label className="admin-field-large">
+              <span>Nombre</span>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(event) => updateField('name', event.target.value)}
+                placeholder="Ej: Aros perlados"
+              />
+            </label>
 
-          <div className="admin-form-row">
+            <label>
+              <span>Categoria</span>
+              <select
+                value={form.categoryId}
+                onChange={(event) => updateField('categoryId', event.target.value)}
+              >
+                <option value="">Seleccionar categoria</option>
+                {categoryOptions.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <label>
               <span>Precio</span>
               <input
@@ -351,62 +410,68 @@ function AdminPanel({
                 step="1"
                 value={form.stock}
                 onChange={(event) => updateField('stock', event.target.value)}
+                placeholder="1"
               />
             </label>
           </div>
+        </div>
 
-          <div className="admin-field">
-            <div className="admin-field-header">
-              <span>Fotos del producto</span>
-                <label className="photo-upload-button">
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    multiple
-                    onChange={(event) => {
-                      addPhotoFiles(event.target.files);
-                      event.target.value = '';
-                    }}
-                  />
-                  <span>Agregar fotos</span>
-                </label>
-            </div>
-
-            <div className="admin-file-field">
-                <small>
-                  {isEditing
-                    ? 'Opcional. Podes sumar fotos nuevas sin perder las actuales.'
-                    : 'Opcional. Podes cargar una o varias fotos de a poco; si no cargas, se usa la imagen generica.'}
-                </small>
-              <div className="admin-photo-preview-grid">
-                {displayedPhotoPreviews.map((preview, index) => {
-                  const selectedIndex = isEditing ? index - currentPhotoPreviews.length : index;
-                  const isSelectedFile = selectedIndex >= 0 && form.photos[selectedIndex];
-                  const isExistingFile = isEditing && index < currentPhotoPreviews.length;
-
-                  return (
-                    <figure key={`${preview}-${index}`}>
-                      <img src={preview} alt="" aria-hidden="true" />
-                      {(isSelectedFile || isExistingFile) && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            isSelectedFile
-                              ? removePhotoFile(selectedIndex)
-                              : removeExistingPhoto(preview)
-                          }
-                          aria-label="Quitar foto"
-                        >
-                          x
-                        </button>
-                      )}
-                    </figure>
-                  );
-                })}
-              </div>
-            </div>
+        <div className="admin-form-section admin-media-section">
+          <div className="admin-section-title">
+            <span>Fotos del producto</span>
+            <small>
+              {isEditing
+                ? `Podes sumar fotos nuevas sin perder las actuales. Maximo ${MAX_PRODUCT_PHOTOS} fotos.`
+                : `Podes cargar fotos de a poco. Maximo ${MAX_PRODUCT_PHOTOS} fotos.`}
+            </small>
           </div>
 
+          <div className="admin-media-layout">
+            <label className="photo-upload-button">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                onChange={(event) => {
+                  addPhotoFiles(event.target.files);
+                  event.target.value = '';
+                }}
+              />
+              <span aria-hidden="true">+</span>
+              <strong>Agregar fotos</strong>
+              <small>JPG, PNG o WEBP</small>
+            </label>
+
+            <div className="admin-photo-preview-grid">
+              {displayedPhotoPreviews.map((preview, index) => {
+                const selectedIndex = isEditing ? index - currentPhotoPreviews.length : index;
+                const isSelectedFile = selectedIndex >= 0 && form.photos[selectedIndex];
+                const isExistingFile = isEditing && index < currentPhotoPreviews.length;
+
+                return (
+                  <figure key={`${preview}-${index}`}>
+                    <img src={preview} alt="" aria-hidden="true" />
+                    {(isSelectedFile || isExistingFile) && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          isSelectedFile
+                            ? removePhotoFile(selectedIndex)
+                            : removeExistingPhoto(preview)
+                        }
+                        aria-label="Quitar foto"
+                      >
+                        x
+                      </button>
+                    )}
+                  </figure>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="admin-form-section admin-varieties-section">
           <div className="variety-builder">
             <div className="variety-builder-header">
               <span>Variedades opcionales</span>
@@ -445,7 +510,7 @@ function AdminPanel({
                   {varietiesStockTotal} / {generalStock}
                 </strong>
               </div>
-              <div>
+              <div className="variant-stock-list">
                 {variantRows.map((variant) => (
                   <label key={variant.key}>
                     <strong>
@@ -471,6 +536,7 @@ function AdminPanel({
               </div>
             </div>
           )}
+        </div>
 
           {(localError || message) && (
             <p className={`admin-message ${localError ? 'error' : 'success'}`}>

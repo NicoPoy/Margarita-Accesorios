@@ -7,14 +7,23 @@ const sortOptions = [
   { value: 'stock-desc', label: 'Mas stock' }
 ];
 
+const stockFilterOptions = [
+  { value: 'with-stock', label: 'Con stock' },
+  { value: 'without-stock', label: 'Sin stock' },
+  { value: 'all', label: 'Todos' }
+];
+
 function Toolbar({
   activeCategory,
+  adminStockFilter,
   categories,
+  isAdmin = false,
   query,
   sortOrder,
   onCategoryChange,
   onQueryChange,
-  onSortOrderChange
+  onSortOrderChange,
+  onStockFilterChange
 }) {
   return (
     <section className="toolbar" aria-label="Filtros del catalogo">
@@ -54,6 +63,22 @@ function Toolbar({
           ))}
         </select>
       </label>
+
+      {isAdmin && (
+        <label className="select-field">
+          <span>Stock</span>
+          <select
+            value={adminStockFilter}
+            onChange={(event) => onStockFilterChange(event.target.value)}
+          >
+            {stockFilterOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </section>
   );
 }

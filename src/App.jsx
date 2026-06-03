@@ -8,6 +8,7 @@ import CartDrawer from './components/CartDrawer';
 import CheckoutView from './components/CheckoutView';
 import ConfirmDialog from './components/ConfirmDialog';
 import Header from './components/Header';
+import OrderSuccess from './components/OrderSuccess';
 import PaymentBanner from './components/PaymentBanner';
 import ProductCatalog from './components/ProductCatalog';
 import SiteFooter from './components/SiteFooter';
@@ -169,6 +170,7 @@ function App() {
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [query, setQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('name-asc');
+  const [adminStockFilter, setAdminStockFilter] = useState('with-stock');
   const [authMode, setAuthMode] = useState('login');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [session, setSession] = useState(null);
@@ -178,6 +180,7 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartMessage, setCartMessage] = useState('');
   const [checkoutMessage, setCheckoutMessage] = useState('');
+  const [completedOrder, setCompletedOrder] = useState(null);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [currentView, setCurrentView] = useState('catalog');
   const [productsStatus, setProductsStatus] = useState('');
@@ -362,8 +365,17 @@ function App() {
 
   const filteredProducts = useMemo(() => {
     const search = query.trim().toLowerCase();
+    const sourceProducts = isAdmin ? catalogProducts : activeProducts;
 
-    const products = activeProducts.filter((product) => {
+    const products = sourceProducts.filter((product) => {
+      if (product.active === false) return false;
+
+      const productStock = product.availableStock ?? product.stock;
+      const matchesStockFilter =
+        !isAdmin ||
+        adminStockFilter === 'all' ||
+        (adminStockFilter === 'with-stock' && productStock > 0) ||
+        (adminStockFilter === 'without-stock' && productStock <= 0);
       const matchesCategory =
         activeCategory === 'Todos' || product.category === activeCategory;
       const matchesSearch =
@@ -371,7 +383,7 @@ function App() {
         product.name.toLowerCase().includes(search) ||
         product.category.toLowerCase().includes(search);
 
-      return matchesCategory && matchesSearch;
+      return matchesStockFilter && matchesCategory && matchesSearch;
     });
 
     return [...products].sort((a, b) => {
@@ -383,7 +395,7 @@ function App() {
 
       return a.name.localeCompare(b.name);
     });
-  }, [activeCategory, activeProducts, query, sortOrder]);
+  }, [activeCategory, activeProducts, adminStockFilter, catalogProducts, isAdmin, query, sortOrder]);
 
   const loadAdminOrders = async () => {
     setOrdersStatus('');
@@ -1160,8 +1172,17 @@ function App() {
     }
 
     setCartItems([]);
-    setCheckoutMessage(`Pedido #${data?.pedido_id || ''} finalizado correctamente.`);
-    setCurrentView('my-orders');
+    const nextCompletedOrder = {
+      id: data?.pedido_id || '',
+      total: cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      paymentMethod
+    };
+    setCompletedOrder(nextCompletedOrder);
+    setCheckoutMessage('');
+    setCurrentView('order-success');
+    if (isClient) {
+      loadUserOrders();
+    }
   };
 
   const markOrderDelivered = async (orderId) => {
@@ -1376,28 +1397,55 @@ function App() {
         <>
           <Toolbar
             activeCategory={activeCategory}
+            adminStockFilter={adminStockFilter}
             categories={categories}
+            isAdmin={isAdmin}
             query={query}
             sortOrder={sortOrder}
             onCategoryChange={setActiveCategory}
             onQueryChange={setQuery}
             onSortOrderChange={setSortOrder}
+            onStockFilterChange={setAdminStockFilter}
           />
 
           {productsStatus && <p className="catalog-status">{productsStatus}</p>}
         </>
       )}
 
-      {currentView === 'catalog' && isAdmin && (
+      {currentView === 'catalog' && isAdmin && !editingProduct && (
         <AdminPanel
           categories={catalogCategories}
-          editingProduct={editingProduct}
+          editingProduct={null}
           message={adminMessage}
           onCancelEdit={() => setEditingProduct(null)}
           onCreateProduct={createProduct}
           onExportProducts={exportProductsCsv}
           onUpdateProduct={updateProduct}
         />
+      )}
+
+      {currentView === 'catalog' && isAdmin && editingProduct && (
+        <div className="admin-edit-modal-backdrop" role="presentation">
+          <div className="admin-edit-modal" role="dialog" aria-modal="true">
+            <button
+              className="admin-edit-modal-close"
+              type="button"
+              onClick={() => setEditingProduct(null)}
+              aria-label="Cerrar edicion"
+            >
+              x
+            </button>
+            <AdminPanel
+              categories={catalogCategories}
+              editingProduct={editingProduct}
+              message={adminMessage}
+              onCancelEdit={() => setEditingProduct(null)}
+              onCreateProduct={createProduct}
+              onExportProducts={null}
+              onUpdateProduct={updateProduct}
+            />
+          </div>
+        </div>
       )}
 
       {currentView === 'out-of-stock' && isAdmin && (
@@ -1441,6 +1489,12 @@ function App() {
           title="Mis pedidos"
           onRefresh={loadUserOrders}
         />
+      ) : currentView === 'order-success' && !isAdmin ? (
+        <OrderSuccess
+          order={completedOrder}
+          onBackToCatalog={() => setCurrentView('catalog')}
+          onViewOrders={() => setCurrentView('my-orders')}
+        />
       ) : currentView === 'catalog' ? (
         <ProductCatalog
           activeCategory={activeCategory}
@@ -1451,7 +1505,7 @@ function App() {
           onDeleteProduct={deleteProduct}
           onEditProduct={editProduct}
         />
-      ) : (
+      ) : currentView === 'checkout' ? (
         <CheckoutView
           cartItems={cartItems}
           checkoutMessage={checkoutMessage}
@@ -1459,7 +1513,7 @@ function App() {
           onBack={() => setCurrentView('catalog')}
           onFinishOrder={finishOrder}
         />
-      )}
+      ) : null}
 
       {!isAdmin && currentView === 'catalog' && <PaymentBanner />}
 
