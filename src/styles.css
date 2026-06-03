@@ -769,6 +769,13 @@ h1 {
   gap: 14px;
 }
 
+.admin-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .admin-orders-heading {
   margin-bottom: 16px;
   border-bottom: 1px solid var(--line);
@@ -1299,6 +1306,66 @@ h1 {
   line-height: 1;
   font-weight: 900;
   cursor: pointer;
+}
+
+.admin-file-field .admin-photo-preview-grid figure > button:hover {
+  background: #fff0f4;
+  transform: scale(1.04);
+}
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(46, 24, 34, 0.35);
+  backdrop-filter: blur(12px);
+}
+
+.confirm-dialog {
+  width: min(460px, 100%);
+  border: 1px solid rgba(216, 101, 136, 0.26);
+  border-radius: 8px;
+  padding: 22px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 240, 244, 0.94)),
+    var(--paper);
+  box-shadow: 0 28px 80px rgba(46, 24, 34, 0.24);
+}
+
+.confirm-dialog > span {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid rgba(216, 101, 136, 0.22);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--rose-700);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.confirm-dialog h2 {
+  margin-top: 12px;
+  color: var(--rose-900);
+  font-size: 1.65rem;
+}
+
+.confirm-dialog p {
+  margin-top: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 
 .admin-form-row {
@@ -2604,6 +2671,14 @@ h1 {
 
   .admin-category-actions {
     justify-content: flex-start;
+  }
+
+  .admin-heading-actions,
+  .confirm-actions,
+  .confirm-actions .admin-submit,
+  .confirm-actions .admin-danger-button,
+  .confirm-actions .admin-cancel-button {
+    width: 100%;
   }
 
   .product-detail {

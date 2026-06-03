@@ -35,11 +35,13 @@ function AdminPanel({
   message,
   onCancelEdit,
   onCreateProduct,
+  onExportProducts,
   onUpdateProduct
 }) {
   const [form, setForm] = useState(initialForm);
   const [isSaving, setIsSaving] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [removedImageUrls, setRemovedImageUrls] = useState([]);
   const isEditing = Boolean(editingProduct);
 
   const categoryOptions = useMemo(
@@ -55,13 +57,17 @@ function AdminPanel({
       ? editingProduct.images
       : [editingProduct?.image || DEFAULT_PRODUCT_IMAGE];
 
-    return images.filter(Boolean);
-  }, [editingProduct]);
-  const displayedPhotoPreviews = isEditing
-    ? [...currentPhotoPreviews, ...form.photos.map((photo) => photo.previewUrl)]
-    : form.photos.length
-      ? form.photos.map((photo) => photo.previewUrl)
-      : [DEFAULT_PRODUCT_IMAGE];
+    return images
+      .filter(Boolean)
+      .filter((image) => !removedImageUrls.includes(image));
+  }, [editingProduct, removedImageUrls]);
+  const displayedPhotoPreviews = (() => {
+    const previews = isEditing
+      ? [...currentPhotoPreviews, ...form.photos.map((photo) => photo.previewUrl)]
+      : form.photos.map((photo) => photo.previewUrl);
+
+    return previews.length ? previews : [DEFAULT_PRODUCT_IMAGE];
+  })();
   const variantRows = useMemo(
     () => form.varieties.map((name) => ({ key: name, name })),
     [form.varieties]
@@ -87,18 +93,19 @@ function AdminPanel({
       return;
     }
 
+    setRemovedImageUrls([]);
     setForm((currentForm) => {
       clearPhotoPreviews(currentForm.photos);
 
       return {
-      name: editingProduct.name || '',
-      categoryId: editingProduct.categoryId || '',
-      price: String(editingProduct.price || ''),
-      stock: String(editingProduct.stock ?? 0),
-      photos: [],
-      varietyDraft: '',
-      varieties: editingProduct.varieties || [],
-      variantStocks: buildVariantStocks(editingProduct.variants)
+        name: editingProduct.name || '',
+        categoryId: editingProduct.categoryId || '',
+        price: String(editingProduct.price || ''),
+        stock: String(editingProduct.stock ?? 0),
+        photos: [],
+        varietyDraft: '',
+        varieties: editingProduct.varieties || [],
+        variantStocks: buildVariantStocks(editingProduct.variants)
       };
     });
     setLocalError('');
@@ -157,8 +164,8 @@ function AdminPanel({
           ...payload,
           id: editingProduct.id,
           currentImageUrl:
-            editingProduct.image === DEFAULT_PRODUCT_IMAGE ? null : editingProduct.image,
-          currentImageUrls: (editingProduct.images || []).filter(
+            currentPhotoPreviews[0] === DEFAULT_PRODUCT_IMAGE ? null : currentPhotoPreviews[0],
+          currentImageUrls: currentPhotoPreviews.filter(
             (image) => image !== DEFAULT_PRODUCT_IMAGE
           ),
           currentImagePath: editingProduct.imagePath
@@ -177,6 +184,7 @@ function AdminPanel({
 
   const handleCancelEdit = () => {
     setLocalError('');
+    setRemovedImageUrls([]);
     setForm((currentForm) => {
       clearPhotoPreviews(currentForm.photos);
       return initialForm;
@@ -235,6 +243,14 @@ function AdminPanel({
     }));
   };
 
+  const removeExistingPhoto = (imageUrl) => {
+    if (!isEditing || imageUrl === DEFAULT_PRODUCT_IMAGE) return;
+
+    setRemovedImageUrls((currentUrls) =>
+      currentUrls.includes(imageUrl) ? currentUrls : [...currentUrls, imageUrl]
+    );
+  };
+
   const addVariety = () => {
     const nextVariety = form.varietyDraft.trim();
 
@@ -277,8 +293,15 @@ function AdminPanel({
   return (
     <section className="admin-panel">
       <div className="admin-heading">
-        <span>{isEditing ? 'Edicion' : 'Gestion'}</span>
-        <h2>{isEditing ? 'Modificar producto' : 'Administrar productos'}</h2>
+        <div>
+          <span>{isEditing ? 'Edicion' : 'Gestion'}</span>
+          <h2>{isEditing ? 'Modificar producto' : 'Administrar productos'}</h2>
+        </div>
+        {onExportProducts && (
+          <button className="admin-secondary-button" type="button" onClick={onExportProducts}>
+            Exportar productos
+          </button>
+        )}
       </div>
 
       <form className="admin-form" onSubmit={handleSubmit}>
@@ -359,14 +382,19 @@ function AdminPanel({
                 {displayedPhotoPreviews.map((preview, index) => {
                   const selectedIndex = isEditing ? index - currentPhotoPreviews.length : index;
                   const isSelectedFile = selectedIndex >= 0 && form.photos[selectedIndex];
+                  const isExistingFile = isEditing && index < currentPhotoPreviews.length;
 
                   return (
                     <figure key={`${preview}-${index}`}>
                       <img src={preview} alt="" aria-hidden="true" />
-                      {isSelectedFile && (
+                      {(isSelectedFile || isExistingFile) && (
                         <button
                           type="button"
-                          onClick={() => removePhotoFile(selectedIndex)}
+                          onClick={() =>
+                            isSelectedFile
+                              ? removePhotoFile(selectedIndex)
+                              : removeExistingPhoto(preview)
+                          }
                           aria-label="Quitar foto"
                         >
                           x

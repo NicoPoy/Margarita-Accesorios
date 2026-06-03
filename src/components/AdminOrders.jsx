@@ -49,6 +49,7 @@ function AdminOrders({
   showCustomer = true,
   title = 'Pedidos',
   onCancelOrder,
+  onExportOrders,
   onMarkDelivered,
   onPaymentReceived,
   onRefresh
@@ -60,9 +61,16 @@ function AdminOrders({
           <span>{badge}</span>
           <h2>{title}</h2>
         </div>
-        <button className="admin-secondary-button" type="button" onClick={onRefresh}>
-          Actualizar
-        </button>
+        <div className="admin-heading-actions">
+          {onExportOrders && (
+            <button className="admin-secondary-button" type="button" onClick={onExportOrders}>
+              Exportar pedidos
+            </button>
+          )}
+          <button className="admin-secondary-button" type="button" onClick={onRefresh}>
+            Actualizar
+          </button>
+        </div>
       </div>
 
       {message && (

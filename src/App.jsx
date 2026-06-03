@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AdminCategories from './components/AdminCategories';
 import AdminOrders from './components/AdminOrders';
 import AdminOutOfStock from './components/AdminOutOfStock';
@@ -6,6 +6,7 @@ import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import CartDrawer from './components/CartDrawer';
 import CheckoutView from './components/CheckoutView';
+import ConfirmDialog from './components/ConfirmDialog';
 import Header from './components/Header';
 import PaymentBanner from './components/PaymentBanner';
 import ProductCatalog from './components/ProductCatalog';
@@ -14,6 +15,7 @@ import Toolbar from './components/Toolbar';
 import TopActions from './components/TopActions';
 import { DEFAULT_PRODUCT_IMAGE } from './data/products';
 import { hasSupabaseConfig, supabase } from './lib/supabase';
+import { downloadCsv } from './utils/csv';
 
 const mercadoPagoPaymentLink = import.meta.env.VITE_MERCADO_PAGO_PAYMENT_LINK;
 const productSelect =
@@ -185,6 +187,25 @@ function App() {
   const [userOrders, setUserOrders] = useState([]);
   const [ordersStatus, setOrdersStatus] = useState('');
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const confirmResolver = useRef(null);
+
+  const requestConfirm = ({ confirmLabel, isDanger = false, message, title }) =>
+    new Promise((resolve) => {
+      confirmResolver.current = resolve;
+      setConfirmDialog({
+        confirmLabel,
+        isDanger,
+        message,
+        title
+      });
+    });
+
+  const closeConfirmDialog = (result) => {
+    confirmResolver.current?.(result);
+    confirmResolver.current = null;
+    setConfirmDialog(null);
+  };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const isClient = userRoles.includes('cliente');
@@ -544,7 +565,13 @@ function App() {
       return false;
     }
 
-    if (!window.confirm(`Confirmas que queres cargar el producto "${product.name}"?`)) {
+    const confirmed = await requestConfirm({
+      confirmLabel: 'Cargar producto',
+      message: `Se va a cargar "${product.name}" en el catalogo.`,
+      title: 'Confirmar producto'
+    });
+
+    if (!confirmed) {
       return false;
     }
 
@@ -648,14 +675,20 @@ function App() {
       return false;
     }
 
-    if (!window.confirm(`Confirmas que queres guardar los cambios de "${product.name}"?`)) {
+    const confirmed = await requestConfirm({
+      confirmLabel: 'Guardar cambios',
+      message: `Se van a guardar los cambios de "${product.name}".`,
+      title: 'Confirmar edicion'
+    });
+
+    if (!confirmed) {
       return false;
     }
 
     let uploadedImage = {
       imageUrl: product.currentImageUrl || null,
       imageUrls: product.currentImageUrls || [],
-      imagePath: product.currentImagePath || null
+      imagePath: product.currentImageUrl ? product.currentImagePath || null : null
     };
 
     if (product.photoFiles?.length) {
@@ -667,9 +700,11 @@ function App() {
         ].filter(Boolean);
 
         uploadedImage = {
-          imageUrl: product.currentImageUrl || newUploadedImages.imageUrl,
+          imageUrl: imageUrls[0] || newUploadedImages.imageUrl,
           imageUrls,
-          imagePath: product.currentImagePath || newUploadedImages.imagePath
+          imagePath: product.currentImageUrl
+            ? product.currentImagePath || null
+            : newUploadedImages.imagePath
         };
       } catch (error) {
         setAdminMessage(`No se pudo subir la imagen: ${error.message}`);
@@ -739,7 +774,14 @@ function App() {
       return;
     }
 
-    if (!window.confirm(`Confirmas que queres eliminar "${product.name}" del catalogo?`)) {
+    const confirmed = await requestConfirm({
+      confirmLabel: 'Eliminar producto',
+      isDanger: true,
+      message: `"${product.name}" se va a quitar del catalogo. Los pedidos existentes conservan su historial.`,
+      title: 'Eliminar producto'
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -792,7 +834,13 @@ function App() {
 
     const cleanName = name.trim();
 
-    if (!window.confirm(`Confirmas que queres crear la categoria "${cleanName}"?`)) {
+    const confirmed = await requestConfirm({
+      confirmLabel: 'Crear categoria',
+      message: `Se va a crear la categoria "${cleanName}".`,
+      title: 'Confirmar categoria'
+    });
+
+    if (!confirmed) {
       return false;
     }
 
@@ -830,7 +878,13 @@ function App() {
       return true;
     }
 
-    if (!window.confirm(`Confirmas que queres renombrar "${category.name}" como "${cleanName}"?`)) {
+    const confirmed = await requestConfirm({
+      confirmLabel: 'Guardar nombre',
+      message: `La categoria "${category.name}" va a pasar a llamarse "${cleanName}".`,
+      title: 'Renombrar categoria'
+    });
+
+    if (!confirmed) {
       return false;
     }
 
@@ -886,7 +940,14 @@ function App() {
     const nextActive = !category.active;
     const actionLabel = nextActive ? 'activar' : 'desactivar';
 
-    if (!window.confirm(`Confirmas que queres ${actionLabel} la categoria "${category.name}"?`)) {
+    const confirmed = await requestConfirm({
+      confirmLabel: nextActive ? 'Activar' : 'Desactivar',
+      isDanger: !nextActive,
+      message: `Se va a ${actionLabel} la categoria "${category.name}".`,
+      title: `${nextActive ? 'Activar' : 'Desactivar'} categoria`
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -1172,7 +1233,14 @@ function App() {
 
     const orderToCancel = adminOrders.find((order) => order.id === orderId);
 
-    if (!window.confirm(`Confirmas que queres cancelar el pedido #${orderId}? Se devolvera el stock.`)) {
+    const confirmed = await requestConfirm({
+      confirmLabel: 'Cancelar pedido',
+      isDanger: true,
+      message: `El pedido #${orderId} se va a cancelar y se devolvera el stock.`,
+      title: 'Cancelar pedido'
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -1232,6 +1300,60 @@ function App() {
     setOrdersStatus(`Pedido #${orderId} cancelado. Stock devuelto correctamente.`);
   };
 
+  const exportProductsCsv = () => {
+    if (!catalogProducts.length) {
+      setAdminMessage('No hay productos para exportar.');
+      return;
+    }
+
+    const rows = catalogProducts.map((product) => ({
+      id: product.id,
+      nombre: product.name,
+      categoria: product.category,
+      precio: product.price,
+      stock_general: product.stock,
+      stock_disponible: product.availableStock ?? product.stock,
+      variedades: product.variants?.length
+        ? product.variants.map((variant) => `${variant.name}: ${variant.stock}`).join(' | ')
+        : '',
+      fotos: product.images?.filter((image) => image !== DEFAULT_PRODUCT_IMAGE).join(' | ') || '',
+      activo: product.active ? 'si' : 'no'
+    }));
+
+    downloadCsv(`productos-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    setAdminMessage('Productos exportados en CSV.');
+  };
+
+  const exportOrdersCsv = () => {
+    if (!adminOrders.length) {
+      setOrdersStatus('No hay pedidos para exportar.');
+      return;
+    }
+
+    const rows = adminOrders.flatMap((order) =>
+      order.items.map((item) => ({
+        pedido_id: order.id,
+        fecha: order.date,
+        estado: order.status,
+        medio_pago: order.paymentMethod,
+        pago_estado: order.paymentStatus,
+        cliente: order.customer.name,
+        whatsapp: order.customer.whatsapp,
+        dni: order.customer.dni,
+        producto: item.product.name,
+        categoria: item.product.category,
+        variedad: item.variety,
+        cantidad: item.quantity,
+        precio_unitario: item.unitPrice,
+        subtotal: item.subtotal,
+        total_pedido: order.total
+      }))
+    );
+
+    downloadCsv(`pedidos-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    setOrdersStatus('Pedidos exportados en CSV.');
+  };
+
   return (
     <main className="page-shell">
       <TopActions
@@ -1273,6 +1395,7 @@ function App() {
           message={adminMessage}
           onCancelEdit={() => setEditingProduct(null)}
           onCreateProduct={createProduct}
+          onExportProducts={exportProductsCsv}
           onUpdateProduct={updateProduct}
         />
       )}
@@ -1302,6 +1425,7 @@ function App() {
           message={ordersStatus}
           orders={adminOrders}
           onCancelOrder={cancelOrder}
+          onExportOrders={exportOrdersCsv}
           onMarkDelivered={markOrderDelivered}
           onPaymentReceived={confirmOrderPaymentReceived}
           onRefresh={loadAdminOrders}
@@ -1362,6 +1486,17 @@ function App() {
           onIncrease={increaseCartItem}
           onRemove={removeCartItem}
           onClear={clearCart}
+        />
+      )}
+
+      {confirmDialog && (
+        <ConfirmDialog
+          confirmLabel={confirmDialog.confirmLabel}
+          isDanger={confirmDialog.isDanger}
+          message={confirmDialog.message}
+          title={confirmDialog.title}
+          onCancel={() => closeConfirmDialog(false)}
+          onConfirm={() => closeConfirmDialog(true)}
         />
       )}
     </main>
