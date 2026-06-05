@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { hasSupabaseConfig, supabase } from '../lib/supabase';
 import { getAuthErrorMessage } from '../utils/authErrors';
+import { normalizeBuenosAiresWhatsApp } from '../utils/contact';
 
 const emptyAuthForm = {
   nombre: '',
@@ -33,18 +34,45 @@ function AuthModal({ mode, onClose, onModeChange, onProfileChange }) {
       return;
     }
 
+    const nextForm = { ...form };
+
+    if (isRegister) {
+      const normalizedWhatsApp = normalizeBuenosAiresWhatsApp(form.whatsapp);
+      const dniDigits = form.dni.replace(/\D/g, '');
+
+      if (normalizedWhatsApp.error) {
+        setStatus({
+          type: 'error',
+          message: normalizedWhatsApp.error
+        });
+        return;
+      }
+
+      if (dniDigits.length < 7 || dniDigits.length > 8) {
+        setStatus({
+          type: 'error',
+          message: 'El DNI tiene que tener 7 u 8 numeros.'
+        });
+        return;
+      }
+
+      nextForm.whatsapp = normalizedWhatsApp.value;
+      nextForm.dni = dniDigits;
+      setForm(nextForm);
+    }
+
     setIsSubmitting(true);
 
     try {
       if (isRegister) {
         const { data, error } = await supabase.auth.signUp({
-          email: form.email,
-          password: form.password,
+          email: nextForm.email,
+          password: nextForm.password,
           options: {
             data: {
-              nombre: form.nombre,
-              whatsapp: form.whatsapp,
-              dni: form.dni
+              nombre: nextForm.nombre,
+              whatsapp: nextForm.whatsapp,
+              dni: nextForm.dni
             }
           }
         });
@@ -64,9 +92,9 @@ function AuthModal({ mode, onClose, onModeChange, onProfileChange }) {
         if (userId && data.session) {
           const profile = {
             id: userId,
-            nombre: form.nombre,
-            whatsapp: form.whatsapp,
-            dni: form.dni,
+            nombre: nextForm.nombre,
+            whatsapp: nextForm.whatsapp,
+            dni: nextForm.dni,
             activo: true
           };
 
@@ -87,8 +115,8 @@ function AuthModal({ mode, onClose, onModeChange, onProfileChange }) {
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password
+        email: nextForm.email,
+        password: nextForm.password
       });
 
       if (error) throw error;
@@ -159,7 +187,8 @@ function AuthModal({ mode, onClose, onModeChange, onProfileChange }) {
                 <input
                   value={form.whatsapp}
                   onChange={(event) => updateField('whatsapp', event.target.value)}
-                  placeholder="+54 9 ..."
+                  placeholder="+5492226606589"
+                  required
                 />
               </label>
               <label>

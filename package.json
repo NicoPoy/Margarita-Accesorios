@@ -6,9 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "node node_modules/vite/bin/vite.js build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android:add": "cap add android",
+    "android:sync": "npm run build && cap sync android",
+    "android:open": "cap open android",
+    "android:build:debug": "npm run android:sync && cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@supabase/supabase-js": "2.49.4",
     "@vitejs/plugin-react": "^4.7.0",
     "react": "^18.3.1",

@@ -164,6 +164,124 @@ const getSelectedVariant = (product, variety) => {
   return product.variants.find((variant) => variant.name === variety);
 };
 
+const CART_STORAGE_KEY = 'accesorios-margarita-cart';
+const CART_STORAGE_TTL_MS = 15 * 60 * 1000;
+
+const clearStoredCart = () => {
+  if (typeof window === 'undefined') return;
+
+  window.localStorage.removeItem(CART_STORAGE_KEY);
+};
+
+const sanitizeCartItems = (items) =>
+  (Array.isArray(items) ? items : [])
+    .map((item) => ({
+      id: item.id,
+      variantId: item.variantId || null,
+      variantKey: item.variantKey,
+      name: item.name,
+      price: Number(item.price || 0),
+      image: item.image,
+      variety: item.variety || '',
+      quantity: Math.max(1, Number(item.quantity || 1))
+    }))
+    .filter((item) => item.id && item.variantKey && item.name && item.price > 0);
+
+const getStoredCartItems = () => {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const storedCart = JSON.parse(window.localStorage.getItem(CART_STORAGE_KEY) || 'null');
+
+    if (!storedCart?.expiresAt || Date.now() > storedCart.expiresAt) {
+      clearStoredCart();
+      return [];
+    }
+
+    return sanitizeCartItems(storedCart.items);
+  } catch {
+    clearStoredCart();
+    return [];
+  }
+};
+
+const saveStoredCartItems = (items) => {
+  if (typeof window === 'undefined') return;
+
+  if (!items.length) {
+    clearStoredCart();
+    return;
+  }
+
+  window.localStorage.setItem(
+    CART_STORAGE_KEY,
+    JSON.stringify({
+      expiresAt: Date.now() + CART_STORAGE_TTL_MS,
+      items
+    })
+  );
+};
+
+const reserveCartItemStock = (product, item) => {
+  const quantity = Math.max(0, Number(item.quantity || 0));
+
+  return {
+    ...product,
+    stock: Math.max(0, product.stock - quantity),
+    availableStock: Math.max(0, (product.availableStock ?? product.stock) - quantity),
+    variants: item.variantId
+      ? product.variants.map((variant) =>
+          variant.id === item.variantId
+            ? { ...variant, stock: Math.max(0, variant.stock - quantity) }
+            : variant
+        )
+      : product.variants
+  };
+};
+
+const getCartItemAvailableStock = (product, item) => {
+  if (!product) return 0;
+
+  const selectedVariant = item.variantId
+    ? product.variants?.find((variant) => variant.id === item.variantId)
+    : null;
+
+  return selectedVariant ? selectedVariant.stock : product.stock;
+};
+
+const reconcileCartWithProducts = (products, cartItems) => {
+  let nextProducts = products;
+  let changed = false;
+
+  const nextCartItems = cartItems
+    .map((item) => {
+      const product = nextProducts.find((currentProduct) => currentProduct.id === item.id);
+      const availableStock = getCartItemAvailableStock(product, item);
+      const nextQuantity = Math.min(item.quantity, availableStock);
+
+      if (!product || nextQuantity <= 0) {
+        changed = true;
+        return null;
+      }
+
+      if (nextQuantity !== item.quantity) {
+        changed = true;
+      }
+
+      const nextItem = { ...item, quantity: nextQuantity };
+      nextProducts = nextProducts.map((currentProduct) =>
+        currentProduct.id === item.id
+          ? reserveCartItemStock(currentProduct, nextItem)
+          : currentProduct
+      );
+
+      return nextItem;
+    })
+    .filter(Boolean);
+
+  return { cartItems: nextCartItems, changed, products: nextProducts };
+};
+
 function App() {
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [catalogCategories, setCatalogCategories] = useState([]);
@@ -176,7 +294,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [userRoles, setUserRoles] = useState([]);
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(getStoredCartItems);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartMessage, setCartMessage] = useState('');
   const [checkoutMessage, setCheckoutMessage] = useState('');
@@ -215,6 +333,10 @@ function App() {
   const isAdmin = userRoles.includes('admin');
   const displayName =
     profile?.nombre || session?.user?.user_metadata?.nombre || 'usuario';
+
+  useEffect(() => {
+    saveStoredCartItems(cartItems);
+  }, [cartItems]);
 
   useEffect(() => {
     if (!hasSupabaseConfig) return undefined;
@@ -295,7 +417,23 @@ function App() {
         return;
       }
 
-      setCatalogProducts((data || []).map(mapDatabaseProduct));
+      const mappedProducts = (data || []).map(mapDatabaseProduct);
+      const reconciledCart = reconcileCartWithProducts(mappedProducts, cartItems);
+
+      setCatalogProducts(reconciledCart.products);
+
+      if (reconciledCart.changed) {
+        setCartItems(reconciledCart.cartItems);
+
+        if (cartItems.length) {
+          setCartMessage(
+            reconciledCart.cartItems.length
+              ? 'Actualizamos tu carrito porque cambio el stock disponible.'
+              : 'Tu carrito guardado vencio o ya no tiene stock disponible.'
+          );
+        }
+      }
+
       setProductsStatus('');
     };
 
