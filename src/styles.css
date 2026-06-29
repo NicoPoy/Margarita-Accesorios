@@ -957,6 +957,639 @@ h1 {
   backdrop-filter: blur(14px);
 }
 
+.admin-raffles {
+  margin-top: 22px;
+  border: 1px solid rgba(216, 101, 136, 0.2);
+  border-radius: 8px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 240, 244, 0.74)),
+    var(--paper);
+  box-shadow: 0 18px 54px rgba(123, 41, 68, 0.1);
+  backdrop-filter: blur(14px);
+}
+
+.raffle-workspace {
+  display: grid;
+  gap: 14px;
+}
+
+.raffle-start-grid,
+.raffle-controls-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.raffle-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.raffle-summary div {
+  border: 1px solid rgba(216, 101, 136, 0.16);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.raffle-summary span,
+.raffle-winners > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--rose-700);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.raffle-summary strong {
+  color: var(--rose-900);
+  font-size: 1.35rem;
+}
+
+.admin-raffles label {
+  min-width: 0;
+}
+
+.admin-raffles input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid rgba(216, 101, 136, 0.22);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: rgba(255, 249, 251, 0.92);
+  color: var(--ink);
+  outline: none;
+  transition: 160ms ease;
+}
+
+.admin-raffles input:focus {
+  border-color: var(--rose-500);
+  box-shadow: 0 0 0 4px rgba(216, 101, 136, 0.14);
+}
+
+.admin-raffles input:disabled {
+  border-color: rgba(216, 101, 136, 0.14);
+  background: rgba(247, 225, 232, 0.45);
+  color: var(--mauve-700);
+  cursor: not-allowed;
+}
+
+.raffle-controls-grid label:not(.raffle-toggle),
+.raffle-start-grid label {
+  display: grid;
+  gap: 7px;
+}
+
+.raffle-controls-grid label:not(.raffle-toggle) span,
+.raffle-start-grid label span {
+  color: var(--rose-700);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.raffle-toggle {
+  align-self: stretch;
+  display: flex !important;
+  align-items: center;
+  gap: 10px !important;
+  min-height: 46px;
+  border: 1px solid rgba(216, 101, 136, 0.16);
+  border-radius: 8px;
+  padding: 0 16px;
+  background: rgba(255, 249, 251, 0.78);
+}
+
+.raffle-toggle input {
+  width: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  height: 18px;
+  padding: 0;
+  accent-color: var(--rose-500);
+}
+
+.raffle-toggle span {
+  color: var(--rose-900);
+  font-size: 0.92rem;
+  font-weight: 850;
+  text-transform: none;
+}
+
+.raffle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.raffle-winners {
+  border: 1px solid rgba(216, 101, 136, 0.18);
+  border-radius: 8px;
+  padding: 18px;
+  background:
+    radial-gradient(circle at top, rgba(255, 240, 244, 0.98), transparent 58%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 247, 250, 0.78));
+  box-shadow: 0 14px 34px rgba(123, 41, 68, 0.08);
+}
+
+.raffle-winners h3 {
+  color: var(--rose-900);
+  font-size: clamp(1.45rem, 3vw, 2.2rem);
+}
+
+.raffle-podium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.raffle-podium article {
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+  border: 1px solid rgba(216, 101, 136, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  text-align: center;
+}
+
+.raffle-podium small {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--rose-500);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.raffle-podium strong {
+  color: var(--rose-900);
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.raffle-podium b {
+  color: var(--rose-700);
+}
+
+.raffle-number-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.raffle-number-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid rgba(216, 101, 136, 0.16);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 249, 251, 0.78);
+}
+
+.raffle-number-card.is-sold {
+  border-color: rgba(63, 159, 115, 0.24);
+  background: rgba(236, 250, 242, 0.84);
+}
+
+.raffle-number-card strong {
+  display: grid;
+  place-items: center;
+  min-height: 38px;
+  border-radius: 8px;
+  background: rgba(216, 101, 136, 0.12);
+  color: var(--rose-900);
+  font-size: 1.18rem;
+}
+
+.raffle-number-card.is-sold strong {
+  background: rgba(63, 159, 115, 0.14);
+  color: #25683f;
+}
+
+.raffle-number-card input {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.raffle-draw-view {
+  min-height: calc(100vh - 260px);
+}
+
+.raffle-draw-page {
+  display: grid;
+  place-items: center;
+  min-height: min(780px, calc(100vh - 220px));
+  padding: clamp(14px, 3vw, 34px);
+}
+
+.raffle-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 24% 20%, rgba(255, 240, 244, 0.28), transparent 28%),
+    rgba(42, 26, 34, 0.58);
+  backdrop-filter: blur(15px);
+}
+
+.raffle-modal {
+  position: relative;
+  width: min(980px, calc(100vw - 48px));
+  min-height: min(720px, calc(100vh - 48px));
+  overflow: hidden;
+  border: 1px solid rgba(216, 101, 136, 0.3);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.96), transparent 42%),
+    linear-gradient(135deg, rgba(255, 248, 245, 0.96), rgba(255, 235, 242, 0.94)),
+    var(--paper);
+  box-shadow: 0 34px 100px rgba(46, 24, 34, 0.34);
+}
+
+.raffle-stage-card {
+  width: min(1060px, 100%);
+  min-height: min(740px, calc(100vh - 250px));
+}
+
+.raffle-modal::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(216, 101, 136, 0.2);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.raffle-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(216, 101, 136, 0.24);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--rose-900);
+  font-weight: 950;
+}
+
+.raffle-ready-card,
+.raffle-drawing,
+.raffle-result-card {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  min-height: min(720px, calc(100vh - 48px));
+  padding: clamp(34px, 5vw, 64px);
+  text-align: center;
+}
+
+.raffle-ready-card {
+  align-content: center;
+  gap: 18px;
+  background:
+    radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.96), transparent 34%),
+    radial-gradient(circle at 15% 18%, rgba(244, 205, 132, 0.3), transparent 26%),
+    radial-gradient(circle at 86% 24%, rgba(244, 205, 132, 0.24), transparent 24%),
+    linear-gradient(135deg, rgba(255, 250, 247, 0.96), rgba(255, 235, 242, 0.92));
+}
+
+.raffle-drawing > span {
+  display: inline-flex;
+  border: 1px solid rgba(216, 101, 136, 0.24);
+  border-radius: 999px;
+  padding: 7px 13px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--rose-700);
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.raffle-result-card h3 {
+  max-width: 780px;
+  color: #7b2944;
+  font-size: clamp(2.4rem, 5.6vw, 4.4rem);
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.raffle-ready-card h3 {
+  max-width: 780px;
+  color: #7b2944;
+  font-size: clamp(2.4rem, 5.6vw, 4.2rem);
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.raffle-drawing h3 {
+  max-width: 780px;
+  color: var(--rose-900);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.05;
+}
+
+.raffle-drum {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(360px, 74vw);
+  height: min(360px, 74vw);
+  margin: 8px 0;
+  border: 1px solid rgba(216, 101, 136, 0.22);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.96) 0 34%, rgba(255, 240, 244, 0.82) 35% 100%);
+  box-shadow:
+    inset 0 0 0 18px rgba(255, 255, 255, 0.52),
+    0 22px 50px rgba(123, 41, 68, 0.16);
+  animation: rafflePulse 1.2s ease-in-out infinite;
+}
+
+.raffle-drum::before {
+  content: "?";
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--rose-500);
+  color: #fff;
+  font-size: 4rem;
+  font-weight: 950;
+  box-shadow: 0 14px 30px rgba(216, 101, 136, 0.28);
+}
+
+.raffle-drum > strong {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.24), transparent 46%),
+    var(--rose-500);
+  color: #fff;
+  font-size: clamp(4.5rem, 9vw, 6.5rem);
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 16px 34px rgba(216, 101, 136, 0.3);
+  animation: raffleCountdownPop 1s ease-in-out infinite;
+}
+
+.raffle-drum b {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--rose-900);
+  font-size: 1.1rem;
+  font-weight: 950;
+  box-shadow: 0 10px 24px rgba(123, 41, 68, 0.12);
+  animation: raffleOrbit 1.05s linear infinite;
+  animation-delay: var(--delay);
+}
+
+.raffle-drawing p,
+.raffle-ready-card p,
+.raffle-result-card > p {
+  max-width: 520px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.raffle-start-draw-button {
+  justify-self: center;
+  min-width: min(320px, 100%);
+  min-height: 54px;
+  font-size: 1rem;
+}
+
+.raffle-result-card {
+  align-content: center;
+  gap: 18px;
+  background:
+    radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.96), transparent 34%),
+    radial-gradient(circle at 15% 18%, rgba(244, 205, 132, 0.3), transparent 26%),
+    radial-gradient(circle at 86% 24%, rgba(244, 205, 132, 0.24), transparent 24%),
+    linear-gradient(135deg, rgba(255, 250, 247, 0.96), rgba(255, 235, 242, 0.92));
+}
+
+.raffle-result-card::after {
+  content: "";
+  position: absolute;
+  right: 34px;
+  bottom: 28px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: url("/logo-margarita.png") center / 116px 116px no-repeat;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.raffle-result-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border: 1px solid rgba(216, 101, 136, 0.2);
+  border-radius: 999px;
+  padding: 9px 18px 9px 10px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 12px 28px rgba(123, 41, 68, 0.08);
+}
+
+.raffle-result-brand img {
+  width: 62px;
+  height: 62px;
+  border: 5px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  background: rgba(255, 240, 244, 0.88);
+  object-fit: contain;
+  box-shadow: 0 10px 22px rgba(123, 41, 68, 0.12);
+}
+
+.raffle-result-brand div {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+
+.raffle-result-brand span {
+  color: var(--rose-700);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.raffle-result-brand strong {
+  color: var(--rose-900);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+  font-weight: 650;
+}
+
+.raffle-trophy {
+  position: absolute;
+  z-index: 0;
+  width: clamp(96px, 13vw, 148px);
+  color: rgba(192, 132, 60, 0.28);
+  filter: drop-shadow(0 16px 24px rgba(123, 41, 68, 0.1));
+  pointer-events: none;
+}
+
+.raffle-trophy-left {
+  left: clamp(28px, 5vw, 70px);
+  top: 45%;
+  transform: translateY(-50%) rotate(-12deg);
+}
+
+.raffle-trophy-right {
+  right: clamp(28px, 5vw, 70px);
+  top: 45%;
+  transform: translateY(-50%) scaleX(-1) rotate(-12deg);
+}
+
+.raffle-result-podium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 16px;
+  width: min(760px, 100%);
+}
+
+.raffle-result-podium.is-single {
+  width: min(520px, 100%);
+}
+
+.raffle-result-podium article {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  min-height: 210px;
+  border: 1px solid rgba(216, 101, 136, 0.24);
+  border-radius: 8px;
+  padding: 30px 22px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 243, 247, 0.9));
+  box-shadow: 0 24px 54px rgba(123, 41, 68, 0.14);
+  animation: raffleWinnerReveal 520ms ease both;
+}
+
+.raffle-result-podium article:first-child {
+  background:
+    radial-gradient(circle at top, rgba(255, 246, 221, 0.84), transparent 44%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 235, 242, 0.92));
+  transform: translateY(-6px);
+}
+
+.raffle-winner-trophy {
+  width: 58px;
+  height: 58px;
+  color: #c0843c;
+}
+
+.raffle-result-podium small {
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: var(--rose-500);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.raffle-result-podium strong {
+  color: var(--rose-900);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.raffle-result-podium b {
+  color: var(--rose-700);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+}
+
+@keyframes rafflePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+
+@keyframes raffleCountdownPop {
+  0% {
+    transform: scale(0.88);
+  }
+  18%,
+  72% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0.92);
+  }
+}
+
+@keyframes raffleOrbit {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) translateX(128px) rotate(0deg) scale(0.72);
+  }
+  18%,
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(360deg) translateX(128px) rotate(-360deg) scale(1);
+  }
+}
+
+@keyframes raffleWinnerReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .admin-orders-heading,
 .order-card-header,
 .order-footer {
@@ -1703,6 +2336,10 @@ h1 {
 .admin-submit:disabled {
   cursor: not-allowed;
   opacity: 0.68;
+}
+
+.raffle-ready-card .raffle-start-draw-button {
+  justify-self: center;
 }
 
 .order-actions {
@@ -3022,7 +3659,10 @@ h1 {
   .admin-categories-layout,
   .admin-basic-grid,
   .admin-media-layout,
-  .admin-form-row {
+  .admin-form-row,
+  .raffle-start-grid,
+  .raffle-controls-grid,
+  .raffle-summary {
     grid-template-columns: 1fr;
   }
 
@@ -3049,6 +3689,8 @@ h1 {
   }
 
   .admin-heading-actions,
+  .raffle-actions,
+  .raffle-actions .admin-submit,
   .confirm-actions,
   .confirm-actions .admin-submit,
   .confirm-actions .admin-danger-button,
@@ -3090,6 +3732,22 @@ h1 {
     grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
   }
 
+  .raffle-modal {
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+  }
+
+  .raffle-drawing,
+  .raffle-result-card {
+    min-height: min(520px, calc(100vh - 24px));
+  }
+
+  .raffle-drum b {
+    width: 44px;
+    height: 44px;
+    transform-origin: center;
+  }
+
   .admin-photo-preview-grid figure {
     width: 100%;
     height: auto;
@@ -3126,5 +3784,24 @@ h1 {
 
   .variant-stock-list {
     grid-template-columns: 1fr;
+  }
+
+  .raffle-drum b {
+    animation-name: raffleOrbitSmall;
+  }
+}
+
+@keyframes raffleOrbitSmall {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) translateX(92px) rotate(0deg) scale(0.72);
+  }
+  18%,
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(360deg) translateX(92px) rotate(-360deg) scale(1);
   }
 }

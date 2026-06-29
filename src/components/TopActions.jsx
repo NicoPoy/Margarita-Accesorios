@@ -49,6 +49,13 @@ function TopActions({
               >
                 Categorias
               </button>
+              <button
+                className={currentView === 'raffles' ? 'is-active' : ''}
+                type="button"
+                onClick={() => onAdminViewChange('raffles')}
+              >
+                Sorteos
+              </button>
             </div>
           )}
           {!isAdmin && isClient && (

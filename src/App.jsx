@@ -3,6 +3,7 @@ import AdminCategories from './components/AdminCategories';
 import AdminOrders from './components/AdminOrders';
 import AdminOutOfStock from './components/AdminOutOfStock';
 import AdminPanel from './components/AdminPanel';
+import AdminRaffles from './components/AdminRaffles';
 import AuthModal from './components/AuthModal';
 import CartDrawer from './components/CartDrawer';
 import CheckoutView from './components/CheckoutView';
@@ -1604,6 +1605,8 @@ function App() {
           onToggleCategory={toggleCategory}
         />
       )}
+
+      {currentView === 'raffles' && isAdmin && <AdminRaffles />}
 
       {currentView === 'orders' && isAdmin ? (
         <AdminOrders
