@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import { formatPrice } from '../utils/formatters';
+
+const PRODUCTS_PER_PAGE = 12;
 
 function ProductCard({
   canAddToCart,
@@ -63,7 +65,7 @@ function ProductCard({
               onClick={(event) => changeImage(event, -1)}
               aria-label="Ver foto anterior"
             >
-              ‹
+              &lt;
             </button>
             <button
               className="product-image-nav product-image-nav-right"
@@ -71,7 +73,7 @@ function ProductCard({
               onClick={(event) => changeImage(event, 1)}
               aria-label="Ver foto siguiente"
             >
-              ›
+              &gt;
             </button>
             <div className="product-image-dots">
               {productImages.map((image, imageIndex) => (
@@ -122,6 +124,7 @@ function ProductCard({
           type="button"
           disabled={selectedStock === 0 || needsSelection}
           onClick={handleAddToCart}
+          aria-label={`Agregar ${product.name} al carrito`}
         >
           {selectedStock === 0
             ? 'Sin stock'
@@ -159,31 +162,109 @@ function ProductCatalog({
   products,
   onAddToCart,
   onDeleteProduct,
-  onEditProduct
+  onEditProduct,
+  resetKey
 }) {
   const [detailProduct, setDetailProduct] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+  const visibleProducts = useMemo(
+    () =>
+      products.slice(
+        (currentPage - 1) * PRODUCTS_PER_PAGE,
+        currentPage * PRODUCTS_PER_PAGE
+      ),
+    [currentPage, products]
+  );
+  const hasPagedProducts = products.length > PRODUCTS_PER_PAGE;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [resetKey]);
+
+  useEffect(() => {
+    if (totalPages && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <section className="catalog" aria-live="polite">
       <div className="catalog-heading">
         <h2>{activeCategory === 'Todos' ? 'Todos los productos' : activeCategory}</h2>
-        <span>{products.length} resultados</span>
+        <span>
+          {products.length
+            ? `Pagina ${currentPage} de ${totalPages} - ${products.length} resultados`
+            : 'Sin resultados'}
+        </span>
       </div>
 
-      <div className="product-grid">
-        {products.map((product) => (
-          <ProductCard
-            canAddToCart={canAddToCart}
-            canManageProducts={canManageProducts}
-            key={product.id}
-            onOpenDetail={setDetailProduct}
-            product={product}
-            onAddToCart={onAddToCart}
-            onDeleteProduct={onDeleteProduct}
-            onEditProduct={onEditProduct}
-          />
-        ))}
-      </div>
+      {products.length ? (
+        <>
+          <div className="product-grid">
+            {visibleProducts.map((product) => (
+              <ProductCard
+                canAddToCart={canAddToCart}
+                canManageProducts={canManageProducts}
+                key={product.id}
+                onOpenDetail={setDetailProduct}
+                product={product}
+                onAddToCart={onAddToCart}
+                onDeleteProduct={onDeleteProduct}
+                onEditProduct={onEditProduct}
+              />
+            ))}
+          </div>
+
+          {hasPagedProducts && (
+            <nav className="catalog-pagination" aria-label="Paginacion del catalogo">
+              <button
+                className="catalog-page-control"
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              >
+                Anterior
+              </button>
+
+              <div className="catalog-page-list">
+                {Array.from({ length: totalPages }, (_, index) => {
+                  const pageNumber = index + 1;
+
+                  return (
+                    <button
+                      className={`catalog-page-number ${
+                        pageNumber === currentPage ? 'is-active' : ''
+                      }`}
+                      type="button"
+                      key={pageNumber}
+                      onClick={() => setCurrentPage(pageNumber)}
+                      aria-current={pageNumber === currentPage ? 'page' : undefined}
+                      aria-label={`Ir a pagina ${pageNumber}`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                className="catalog-page-control"
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              >
+                Siguiente
+              </button>
+            </nav>
+          )}
+        </>
+      ) : (
+        <div className="catalog-empty">
+          <strong>No encontramos productos con esos filtros.</strong>
+          <span>Proba buscar por otra palabra, categoria u orden.</span>
+        </div>
+      )}
 
       {detailProduct && (
         <ProductDetail
@@ -216,8 +297,18 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
 
   return (
     <div className="product-detail-backdrop" role="presentation">
-      <article className="product-detail" role="dialog" aria-modal="true">
-        <button className="product-detail-close" type="button" onClick={handleClose}>
+      <article
+        className="product-detail"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-detail-title"
+      >
+        <button
+          className="product-detail-close"
+          type="button"
+          onClick={handleClose}
+          aria-label="Cerrar detalle del producto"
+        >
           x
         </button>
         <span className="product-detail-mark" aria-hidden="true">
@@ -253,7 +344,7 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
 
         <div className="product-detail-info">
           <span>{product.category}</span>
-          <h3>{product.name}</h3>
+          <h3 id="product-detail-title">{product.name}</h3>
           <strong>{formatPrice(product.price)}</strong>
           <p>Stock disponible: {needsSelection ? totalAvailableStock : selectedStock}</p>
 
@@ -286,6 +377,7 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
                   variety: selectedVariety
                 })
               }
+              aria-label={`Agregar ${product.name} al carrito`}
             >
               {selectedStock === 0
                 ? 'Sin stock'
@@ -303,6 +395,7 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
             className="product-zoom-close"
             type="button"
             onClick={() => setZoomImage(null)}
+            aria-label="Cerrar imagen ampliada"
           >
             x
           </button>

@@ -8,6 +8,7 @@ import AuthModal from './components/AuthModal';
 import CartDrawer from './components/CartDrawer';
 import CheckoutView from './components/CheckoutView';
 import ConfirmDialog from './components/ConfirmDialog';
+import DocumentMeta from './components/DocumentMeta';
 import Header from './components/Header';
 import OrderSuccess from './components/OrderSuccess';
 import PaymentBanner from './components/PaymentBanner';
@@ -334,6 +335,58 @@ function App() {
   const isAdmin = userRoles.includes('admin');
   const displayName =
     profile?.nombre || session?.user?.user_metadata?.nombre || 'usuario';
+  const pageMeta = useMemo(() => {
+    const baseTitle = 'Margarita Accesorios';
+    const baseDescription =
+      'Catalogo online de Margarita Accesorios: aros, anillos, hebillas, collares, pulseras y accesorios con entregas en La Plata y Canuelas.';
+
+    if (currentView === 'checkout') {
+      return {
+        title: `Checkout | ${baseTitle}`,
+        description: 'Revisa tu pedido y elegi el medio de pago para comprar en Margarita Accesorios.'
+      };
+    }
+
+    if (currentView === 'my-orders') {
+      return {
+        title: `Mis pedidos | ${baseTitle}`,
+        description: 'Consulta el historial y estado de tus pedidos en Margarita Accesorios.'
+      };
+    }
+
+    if (currentView === 'orders') {
+      return {
+        title: `Pedidos | ${baseTitle}`,
+        description: 'Panel de administracion de pedidos de Margarita Accesorios.'
+      };
+    }
+
+    if (currentView === 'categories') {
+      return {
+        title: `Categorias | ${baseTitle}`,
+        description: 'Gestion de categorias del catalogo de Margarita Accesorios.'
+      };
+    }
+
+    if (currentView === 'out-of-stock') {
+      return {
+        title: `Sin stock | ${baseTitle}`,
+        description: 'Gestion de productos sin stock del catalogo de Margarita Accesorios.'
+      };
+    }
+
+    if (activeCategory !== 'Todos') {
+      return {
+        title: `${activeCategory} | ${baseTitle}`,
+        description: `Explora productos de ${activeCategory} en el catalogo online de Margarita Accesorios.`
+      };
+    }
+
+    return {
+      title: baseTitle,
+      description: baseDescription
+    };
+  }, [activeCategory, currentView]);
 
   useEffect(() => {
     saveStoredCartItems(cartItems);
@@ -389,6 +442,8 @@ function App() {
         setProductsStatus('Falta configurar Supabase para cargar productos.');
         return;
       }
+
+      setProductsStatus('Cargando productos...');
 
       const [{ data: categoriesData, error: categoriesError }, { data, error }] =
         await Promise.all([
@@ -1516,6 +1571,8 @@ function App() {
 
   return (
     <main className="page-shell">
+      <DocumentMeta description={pageMeta.description} title={pageMeta.title} />
+
       <TopActions
         cartCount={cartCount}
         displayName={displayName}
@@ -1642,6 +1699,7 @@ function App() {
           canAddToCart={!isAdmin}
           canManageProducts={isAdmin}
           products={filteredProducts}
+          resetKey={[activeCategory, query, sortOrder, adminStockFilter, isAdmin].join("-")}
           onAddToCart={addToCart}
           onDeleteProduct={deleteProduct}
           onEditProduct={editProduct}
