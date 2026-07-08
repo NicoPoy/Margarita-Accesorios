@@ -4406,18 +4406,23 @@ h1 {
 }
 
 .brand-lockup img {
-  width: 150px;
-  height: 150px;
+  width: 190px;
+  height: 190px;
   border: 6px solid #ffffff;
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 12px 36px rgba(123, 41, 68, 0.12);
   flex-shrink: 0;
-  transition: var(--transition);
+  transition: none;
 }
 
 .brand-header:hover .brand-lockup img {
-  transform: rotate(-3deg) scale(1.03);
+  transform: none;
+}
+
+.brand-header:hover::after {
+  transform: none;
+  opacity: 0.04;
 }
 
 .brand-copy {
