@@ -1590,7 +1590,7 @@ function App() {
       <Header />
 
       {currentView === 'catalog' && (
-        <>
+        <div className="catalog-layout-container">
           <Toolbar
             activeCategory={activeCategory}
             adminStockFilter={adminStockFilter}
@@ -1604,20 +1604,35 @@ function App() {
             onStockFilterChange={setAdminStockFilter}
           />
 
-          {productsStatus && <p className="catalog-status">{productsStatus}</p>}
-        </>
-      )}
+          <div className="catalog-content-panel">
+            {productsStatus && <p className="catalog-status">{productsStatus}</p>}
 
-      {currentView === 'catalog' && isAdmin && !editingProduct && (
-        <AdminPanel
-          categories={catalogCategories}
-          editingProduct={null}
-          message={adminMessage}
-          onCancelEdit={() => setEditingProduct(null)}
-          onCreateProduct={createProduct}
-          onExportProducts={exportProductsCsv}
-          onUpdateProduct={updateProduct}
-        />
+            {isAdmin && !editingProduct && (
+              <AdminPanel
+                categories={catalogCategories}
+                editingProduct={null}
+                message={adminMessage}
+                onCancelEdit={() => setEditingProduct(null)}
+                onCreateProduct={createProduct}
+                onExportProducts={exportProductsCsv}
+                onUpdateProduct={updateProduct}
+              />
+            )}
+
+            <ProductCatalog
+              activeCategory={activeCategory}
+              canAddToCart={!isAdmin}
+              canManageProducts={isAdmin}
+              products={filteredProducts}
+              resetKey={[activeCategory, query, sortOrder, adminStockFilter, isAdmin].join("-")}
+              onAddToCart={addToCart}
+              onDeleteProduct={deleteProduct}
+              onEditProduct={editProduct}
+            />
+
+            {!isAdmin && <PaymentBanner />}
+          </div>
+        </div>
       )}
 
       {currentView === 'catalog' && isAdmin && editingProduct && (
@@ -1693,17 +1708,6 @@ function App() {
           onBackToCatalog={() => setCurrentView('catalog')}
           onViewOrders={() => setCurrentView('my-orders')}
         />
-      ) : currentView === 'catalog' ? (
-        <ProductCatalog
-          activeCategory={activeCategory}
-          canAddToCart={!isAdmin}
-          canManageProducts={isAdmin}
-          products={filteredProducts}
-          resetKey={[activeCategory, query, sortOrder, adminStockFilter, isAdmin].join("-")}
-          onAddToCart={addToCart}
-          onDeleteProduct={deleteProduct}
-          onEditProduct={editProduct}
-        />
       ) : currentView === 'checkout' ? (
         <CheckoutView
           cartItems={cartItems}
@@ -1714,7 +1718,6 @@ function App() {
         />
       ) : null}
 
-      {!isAdmin && currentView === 'catalog' && <PaymentBanner />}
 
       <SiteFooter />
 

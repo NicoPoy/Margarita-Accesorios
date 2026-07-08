@@ -26,59 +26,65 @@ function Toolbar({
   onStockFilterChange
 }) {
   return (
-    <section className="toolbar" aria-label="Filtros del catalogo">
-      <label className="search-field">
-        <span>Buscar</span>
-        <input
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Aros, anillos, hebillas..."
-        />
-      </label>
+    <section className="catalog-controls" aria-label="Filtros del catalogo">
+      <div className="search-bar-wrapper">
+        <label className="search-field">
+          <span>Buscar</span>
+          <input
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder="Aros, anillos, hebillas..."
+          />
+        </label>
+      </div>
 
-      <label className="select-field">
-        <span>Categoria</span>
-        <select
-          value={activeCategory}
-          onChange={(event) => onCategoryChange(event.target.value)}
-        >
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="sidebar-filters-wrapper">
+        <h3>Filtros</h3>
 
-      <label className="select-field">
-        <span>Ordenar por</span>
-        <select
-          value={sortOrder}
-          onChange={(event) => onSortOrderChange(event.target.value)}
-        >
-          {sortOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {isAdmin && (
         <label className="select-field">
-          <span>Stock</span>
+          <span>Categoria</span>
           <select
-            value={adminStockFilter}
-            onChange={(event) => onStockFilterChange(event.target.value)}
+            value={activeCategory}
+            onChange={(event) => onCategoryChange(event.target.value)}
           >
-            {stockFilterOptions.map((option) => (
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="select-field">
+          <span>Ordenar por</span>
+          <select
+            value={sortOrder}
+            onChange={(event) => onSortOrderChange(event.target.value)}
+          >
+            {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
         </label>
-      )}
+
+        {isAdmin && (
+          <label className="select-field">
+            <span>Stock</span>
+            <select
+              value={adminStockFilter}
+              onChange={(event) => onStockFilterChange(event.target.value)}
+            >
+              {stockFilterOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
     </section>
   );
 }
