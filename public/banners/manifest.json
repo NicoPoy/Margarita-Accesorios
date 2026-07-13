@@ -14,5 +14,9 @@
   {
     "src": "/banners/banner4.png",
     "alt": "banner4"
+  },
+  {
+    "src": "/banners/banner5.png",
+    "alt": "banner5"
   }
 ]

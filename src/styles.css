@@ -7966,3 +7966,117 @@ h1 {
     height: 54px;
   }
 }
+
+/* Solid, readable button pass */
+:root {
+  --button-primary: #9a3d62;
+  --button-primary-hover: #7b2944;
+  --button-secondary: #ffffff;
+  --button-secondary-hover: #fff0f4;
+  --button-secondary-text: #512d3c;
+  --button-danger: #8b2635;
+  --button-danger-hover: #6f1d2a;
+  --button-success: #2f8f67;
+  --button-success-hover: #25714f;
+}
+
+button,
+.whatsapp-button {
+  background-image: none !important;
+}
+
+.login-button,
+.top-actions .login-button,
+.session-actions .login-button,
+.add-cart-button,
+.auth-submit,
+.admin-submit,
+.cart-checkout,
+.drawer-login-btn,
+.raffle-start-draw-button {
+  border-color: var(--button-primary) !important;
+  background: var(--button-primary) !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+.login-button:hover,
+.top-actions .login-button:hover,
+.session-actions .login-button:hover,
+.add-cart-button:hover:not(:disabled),
+.auth-submit:hover:not(:disabled),
+.admin-submit:hover:not(:disabled),
+.cart-checkout:hover,
+.drawer-login-btn:hover,
+.raffle-start-draw-button:hover {
+  border-color: var(--button-primary-hover) !important;
+  background: var(--button-primary-hover) !important;
+  color: #ffffff !important;
+}
+
+.admin-secondary-button,
+.admin-cancel-button,
+.cart-clear,
+.drawer-logout-btn,
+.category-filter-list button,
+.search-quick-links button,
+.auth-tabs button,
+.cart-button {
+  border-color: rgba(154, 61, 98, 0.28) !important;
+  background: var(--button-secondary) !important;
+  color: var(--button-secondary-text) !important;
+  text-shadow: none !important;
+}
+
+.admin-secondary-button:hover,
+.admin-cancel-button:hover,
+.cart-clear:hover,
+.drawer-logout-btn:hover,
+.category-filter-list button:hover,
+.category-filter-list button.is-active,
+.search-quick-links button:hover,
+.search-quick-links button.is-active,
+.auth-tabs button.is-active,
+.cart-button:hover {
+  border-color: rgba(154, 61, 98, 0.42) !important;
+  background: var(--button-secondary-hover) !important;
+  color: var(--button-primary-hover) !important;
+}
+
+.admin-danger-button,
+.delete-product-button:hover,
+.delete-stock-product-button:hover {
+  border-color: var(--button-danger) !important;
+  background: var(--button-danger) !important;
+  color: #ffffff !important;
+}
+
+.admin-danger-button:hover,
+.delete-product-button:hover,
+.delete-stock-product-button:hover {
+  border-color: var(--button-danger-hover) !important;
+  background: var(--button-danger-hover) !important;
+  color: #ffffff !important;
+}
+
+.whatsapp-button {
+  border-color: var(--button-success) !important;
+  background: var(--button-success) !important;
+  color: #ffffff !important;
+}
+
+.whatsapp-button:hover {
+  border-color: var(--button-success-hover) !important;
+  background: var(--button-success-hover) !important;
+  color: #ffffff !important;
+}
+
+.add-cart-button:disabled,
+.auth-submit:disabled,
+.admin-submit:disabled,
+button:disabled {
+  background: #f2e5eb !important;
+  border-color: #e2c7d2 !important;
+  color: #7b6470 !important;
+  opacity: 1 !important;
+}

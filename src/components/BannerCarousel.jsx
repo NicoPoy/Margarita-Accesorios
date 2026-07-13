@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 const MANIFEST_URL = '/banners/manifest.json';
 const REFRESH_INTERVAL_MS = 8000;
+const AUTO_ROTATION_INTERVAL_MS = 7000;
 
 function normalizeBanners(items) {
   return (Array.isArray(items) ? items : [])
@@ -62,12 +63,12 @@ function BannerCarousel() {
   useEffect(() => {
     if (!hasMultipleBanners) return undefined;
 
-    const rotation = window.setInterval(() => {
+    const rotation = window.setTimeout(() => {
       setActiveIndex((currentIndex) => (currentIndex + 1) % banners.length);
-    }, 5200);
+    }, AUTO_ROTATION_INTERVAL_MS);
 
-    return () => window.clearInterval(rotation);
-  }, [banners.length, hasMultipleBanners]);
+    return () => window.clearTimeout(rotation);
+  }, [activeIndex, banners.length, hasMultipleBanners]);
 
   const dotButtons = useMemo(
     () =>
