@@ -50,6 +50,23 @@ function TopActions({
     <>
       {/* Desktop View */}
       <div className="top-actions desktop-only">
+        <div className="desktop-header-brand" onClick={() => onClientViewChange('catalog')} style={{ cursor: 'pointer' }}>
+          <img src="/logo-margarita.png" alt="Margarita Logo" className="desktop-brand-logo" />
+          <span className="desktop-brand-name">Margarita Accesorios</span>
+        </div>
+
+        <div className="desktop-header-search">
+          <input
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder="Buscar aros, collares, anillos..."
+          />
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+
         {session ? (
           <div className="session-actions">
             <span>Hola, {displayName}</span>
@@ -122,9 +139,11 @@ function TopActions({
             </button>
           </div>
         ) : (
-          <button className="login-button" type="button" onClick={onLoginOpen}>
-            Iniciar sesion
-          </button>
+          <div className="session-actions">
+            <button className="login-button" type="button" onClick={onLoginOpen}>
+              Iniciar sesion
+            </button>
+          </div>
         )}
       </div>
 
