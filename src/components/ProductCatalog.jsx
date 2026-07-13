@@ -2,8 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_PRODUCT_IMAGE } from '../data/products';
 import { formatPrice } from '../utils/formatters';
 
-const PRODUCTS_PER_PAGE = 12;
-
 function ProductCard({
   canAddToCart,
   canManageProducts,
@@ -155,10 +153,51 @@ function ProductCard({
   );
 }
 
+const getVisiblePageItems = (currentPage, totalPages) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = new Set([
+    1,
+    totalPages,
+    currentPage,
+    currentPage - 1,
+    currentPage + 1
+  ]);
+
+  if (currentPage <= 3) {
+    pages.add(2);
+    pages.add(3);
+    pages.add(4);
+  }
+
+  if (currentPage >= totalPages - 2) {
+    pages.add(totalPages - 3);
+    pages.add(totalPages - 2);
+    pages.add(totalPages - 1);
+  }
+
+  const visiblePages = [...pages]
+    .filter((pageNumber) => pageNumber >= 1 && pageNumber <= totalPages)
+    .sort((a, b) => a - b);
+
+  return visiblePages.flatMap((pageNumber, index) => {
+    const previousPage = visiblePages[index - 1];
+
+    if (previousPage && pageNumber - previousPage > 1) {
+      return [`ellipsis-${previousPage}-${pageNumber}`, pageNumber];
+    }
+
+    return [pageNumber];
+  });
+};
+
 function ProductCatalog({
   activeCategory,
   canAddToCart = true,
   canManageProducts = false,
+  itemsPerPage = 12,
   products,
   onAddToCart,
   onDeleteProduct,
@@ -167,16 +206,21 @@ function ProductCatalog({
 }) {
   const [detailProduct, setDetailProduct] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+  const pageSize = Number(itemsPerPage) || 12;
+  const totalPages = Math.ceil(products.length / pageSize);
   const visibleProducts = useMemo(
     () =>
       products.slice(
-        (currentPage - 1) * PRODUCTS_PER_PAGE,
-        currentPage * PRODUCTS_PER_PAGE
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
       ),
-    [currentPage, products]
+    [currentPage, pageSize, products]
   );
-  const hasPagedProducts = products.length > PRODUCTS_PER_PAGE;
+  const hasPagedProducts = products.length > pageSize;
+  const visiblePageItems = useMemo(
+    () => getVisiblePageItems(currentPage, totalPages),
+    [currentPage, totalPages]
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -228,8 +272,16 @@ function ProductCatalog({
               </button>
 
               <div className="catalog-page-list">
-                {Array.from({ length: totalPages }, (_, index) => {
-                  const pageNumber = index + 1;
+                {visiblePageItems.map((pageItem) => {
+                  if (typeof pageItem === 'string') {
+                    return (
+                      <span className="catalog-page-ellipsis" key={pageItem}>
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const pageNumber = pageItem;
 
                   return (
                     <button

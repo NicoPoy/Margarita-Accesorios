@@ -292,6 +292,8 @@ function App() {
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [query, setQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('name-asc');
+  const [priceFilter, setPriceFilter] = useState('all');
+  const [itemsPerPage, setItemsPerPage] = useState(12);
   const [adminStockFilter, setAdminStockFilter] = useState('with-stock');
   const [authMode, setAuthMode] = useState('login');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -567,6 +569,11 @@ function App() {
       if (product.active === false) return false;
 
       const productStock = product.availableStock ?? product.stock;
+      const matchesPrice =
+        priceFilter === 'all' ||
+        (priceFilter === 'under-5000' && product.price <= 5000) ||
+        (priceFilter === '5000-15000' && product.price > 5000 && product.price <= 15000) ||
+        (priceFilter === 'over-15000' && product.price > 15000);
       const matchesStockFilter =
         !isAdmin ||
         adminStockFilter === 'all' ||
@@ -579,7 +586,7 @@ function App() {
         product.name.toLowerCase().includes(search) ||
         product.category.toLowerCase().includes(search);
 
-      return matchesStockFilter && matchesCategory && matchesSearch;
+      return matchesPrice && matchesStockFilter && matchesCategory && matchesSearch;
     });
 
     return [...products].sort((a, b) => {
@@ -591,7 +598,15 @@ function App() {
 
       return a.name.localeCompare(b.name);
     });
-  }, [activeCategory, activeProducts, adminStockFilter, catalogProducts, isAdmin, query, sortOrder]);
+  }, [activeCategory, activeProducts, adminStockFilter, catalogProducts, isAdmin, priceFilter, query, sortOrder]);
+
+  useEffect(() => {
+    const maxItems = Math.max(1, filteredProducts.length);
+
+    if (itemsPerPage > maxItems) {
+      setItemsPerPage(maxItems);
+    }
+  }, [filteredProducts.length, itemsPerPage]);
 
   const loadAdminOrders = async () => {
     setOrdersStatus('');
@@ -1604,11 +1619,14 @@ function App() {
               activeCategory={activeCategory}
               adminStockFilter={adminStockFilter}
               categories={categories}
+              itemsPerPage={itemsPerPage}
+              maxItemsPerPage={filteredProducts.length}
               isAdmin={isAdmin}
-              query={query}
+              priceFilter={priceFilter}
               sortOrder={sortOrder}
               onCategoryChange={setActiveCategory}
-              onQueryChange={setQuery}
+              onItemsPerPageChange={setItemsPerPage}
+              onPriceFilterChange={setPriceFilter}
               onSortOrderChange={setSortOrder}
               onStockFilterChange={setAdminStockFilter}
             />
@@ -1632,8 +1650,9 @@ function App() {
                 activeCategory={activeCategory}
                 canAddToCart={!isAdmin}
                 canManageProducts={isAdmin}
+                itemsPerPage={itemsPerPage}
                 products={filteredProducts}
-                resetKey={[activeCategory, query, sortOrder, adminStockFilter, isAdmin].join("-")}
+                resetKey={[activeCategory, query, sortOrder, priceFilter, itemsPerPage, adminStockFilter, isAdmin].join("-")}
                 onAddToCart={addToCart}
                 onDeleteProduct={deleteProduct}
                 onEditProduct={editProduct}
@@ -1761,11 +1780,14 @@ function App() {
               activeCategory={activeCategory}
               adminStockFilter={adminStockFilter}
               categories={categories}
+              itemsPerPage={itemsPerPage}
+              maxItemsPerPage={filteredProducts.length}
               isAdmin={isAdmin}
-              query={query}
+              priceFilter={priceFilter}
               sortOrder={sortOrder}
               onCategoryChange={setActiveCategory}
-              onQueryChange={setQuery}
+              onItemsPerPageChange={setItemsPerPage}
+              onPriceFilterChange={setPriceFilter}
               onSortOrderChange={setSortOrder}
               onStockFilterChange={setAdminStockFilter}
             />
@@ -1789,8 +1811,9 @@ function App() {
                 activeCategory={activeCategory}
                 canAddToCart={!isAdmin}
                 canManageProducts={isAdmin}
+                itemsPerPage={itemsPerPage}
                 products={filteredProducts}
-                resetKey={[activeCategory, query, sortOrder, adminStockFilter, isAdmin].join("-")}
+                resetKey={[activeCategory, query, sortOrder, priceFilter, itemsPerPage, adminStockFilter, isAdmin].join("-")}
                 onAddToCart={addToCart}
                 onDeleteProduct={deleteProduct}
                 onEditProduct={editProduct}

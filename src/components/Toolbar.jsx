@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const sortOptions = [
   { value: 'name-asc', label: 'Nombre A-Z' },
@@ -13,40 +13,50 @@ const stockFilterOptions = [
   { value: 'all', label: 'Todos' }
 ];
 
+const priceFilterOptions = [
+  { value: 'all', label: 'Todos los precios' },
+  { value: 'under-5000', label: 'Hasta $5.000' },
+  { value: '5000-15000', label: '$5.000 a $15.000' },
+  { value: 'over-15000', label: 'Mas de $15.000' }
+];
+
 function Toolbar({
   activeCategory,
   adminStockFilter,
   categories,
+  itemsPerPage,
+  maxItemsPerPage = 1,
   isAdmin = false,
-  query,
+  priceFilter,
   sortOrder,
   onCategoryChange,
-  onQueryChange,
+  onItemsPerPageChange,
+  onPriceFilterChange,
   onSortOrderChange,
   onStockFilterChange
 }) {
+  const normalizedMaxItemsPerPage = Math.max(1, Number(maxItemsPerPage) || 1);
+  const [itemsPerPageDraft, setItemsPerPageDraft] = useState(String(itemsPerPage));
+
+  useEffect(() => {
+    setItemsPerPageDraft(String(itemsPerPage));
+  }, [itemsPerPage]);
+
+  const applyItemsPerPage = () => {
+    const numericValue = Number(itemsPerPageDraft);
+
+    if (!Number.isFinite(numericValue) || itemsPerPageDraft.trim() === '') {
+      setItemsPerPageDraft(String(itemsPerPage));
+      return;
+    }
+
+    onItemsPerPageChange(
+      Math.min(normalizedMaxItemsPerPage, Math.max(1, Math.floor(numericValue)))
+    );
+  };
 
   return (
     <section className="catalog-controls" aria-label="Filtros del catalogo">
-      <div className="search-bar-wrapper">
-        <div className="search-copy">
-          <span>Buscar productos</span>
-          <strong>Encontra tu accesorio ideal</strong>
-          <p>Aros, anillos, collares y detalles para cada ocasion.</p>
-        </div>
-        <label className="search-field">
-          <span>Buscar</span>
-          <input
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Buscar por nombre, categoria o estilo..."
-          />
-        </label>
-        <div className="search-brand-mark" aria-hidden="true">
-          <img src="/logo-margarita.png" alt="" />
-        </div>
-      </div>
-
       <aside className="sidebar-filters-wrapper">
         <h3>Filtros</h3>
 
@@ -62,6 +72,40 @@ function Toolbar({
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="select-field">
+          <span>Precio</span>
+          <select
+            value={priceFilter}
+            onChange={(event) => onPriceFilterChange(event.target.value)}
+          >
+            {priceFilterOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="select-field">
+          <span>Elementos por pagina</span>
+          <input
+            className="items-per-page-input"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={itemsPerPageDraft}
+            onBlur={() => setItemsPerPageDraft(String(itemsPerPage))}
+            onChange={(event) => setItemsPerPageDraft(event.target.value.replace(/\D/g, ''))}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                applyItemsPerPage();
+              }
+            }}
+            aria-label={`Elementos por pagina, maximo ${normalizedMaxItemsPerPage}`}
+          />
         </label>
 
         {isAdmin && (
