@@ -25,35 +25,30 @@ function Toolbar({
   onSortOrderChange,
   onStockFilterChange
 }) {
+
   return (
     <section className="catalog-controls" aria-label="Filtros del catalogo">
       <div className="search-bar-wrapper">
+        <div className="search-copy">
+          <span>Buscar productos</span>
+          <strong>Encontra tu accesorio ideal</strong>
+          <p>Aros, anillos, collares y detalles para cada ocasion.</p>
+        </div>
         <label className="search-field">
           <span>Buscar</span>
           <input
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Aros, anillos, hebillas..."
+            placeholder="Buscar por nombre, categoria o estilo..."
           />
         </label>
+        <div className="search-brand-mark" aria-hidden="true">
+          <img src="/logo-margarita.png" alt="" />
+        </div>
       </div>
 
-      <div className="sidebar-filters-wrapper">
+      <aside className="sidebar-filters-wrapper">
         <h3>Filtros</h3>
-
-        <label className="select-field">
-          <span>Categoria</span>
-          <select
-            value={activeCategory}
-            onChange={(event) => onCategoryChange(event.target.value)}
-          >
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </label>
 
         <label className="select-field">
           <span>Ordenar por</span>
@@ -84,7 +79,23 @@ function Toolbar({
             </select>
           </label>
         )}
-      </div>
+
+        <div className="category-filter-group">
+          <span>Categorias</span>
+          <div className="category-filter-list">
+            {categories.map((category) => (
+              <button
+                className={category === activeCategory ? 'is-active' : ''}
+                key={category}
+                type="button"
+                onClick={() => onCategoryChange(category)}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+      </aside>
     </section>
   );
 }

@@ -9,7 +9,7 @@ import CartDrawer from './components/CartDrawer';
 import CheckoutView from './components/CheckoutView';
 import ConfirmDialog from './components/ConfirmDialog';
 import DocumentMeta from './components/DocumentMeta';
-import Header from './components/Header';
+import BannerCarousel from './components/BannerCarousel';
 import OrderSuccess from './components/OrderSuccess';
 import PaymentBanner from './components/PaymentBanner';
 import ProductCatalog from './components/ProductCatalog';
@@ -1596,8 +1596,7 @@ function App() {
           sortOrder={sortOrder}
           onSortOrderChange={setSortOrder}
         />
-
-        <Header />
+        {currentView === 'catalog' && <BannerCarousel />}
 
         {currentView === 'catalog' && (
           <div className="catalog-layout-container">
@@ -1753,6 +1752,8 @@ function App() {
           sortOrder={sortOrder}
           onSortOrderChange={setSortOrder}
         />
+
+        {currentView === 'catalog' && <BannerCarousel />}
 
         {currentView === 'catalog' && (
           <div className="catalog-layout-container">

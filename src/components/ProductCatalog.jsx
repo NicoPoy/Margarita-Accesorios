@@ -191,12 +191,12 @@ function ProductCatalog({
   return (
     <section className="catalog" aria-live="polite">
       <div className="catalog-heading">
-        <h2>{activeCategory === 'Todos' ? 'Todos los productos' : activeCategory}</h2>
-        <span>
+        <h2>
           {products.length
-            ? `Pagina ${currentPage} de ${totalPages} - ${products.length} resultados`
+            ? `Mostrando ${visibleProducts.length} de ${products.length} productos`
             : 'Sin resultados'}
-        </span>
+        </h2>
+        <span>{activeCategory === 'Todos' ? 'Todos' : activeCategory}</span>
       </div>
 
       {products.length ? (

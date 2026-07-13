@@ -6,8 +6,9 @@ function Header() {
       <div className="brand-lockup">
         <img src="/logo-margarita.png" alt="Margarita Accesorios" />
         <div className="brand-copy">
-          <span className="eyebrow">Tienda online</span>
+          <span className="eyebrow">Nueva coleccion</span>
           <h1>Margarita Accesorios</h1>
+          <p>Aros, anillos, collares y detalles delicados para todos los dias.</p>
         </div>
       </div>
     </header>
