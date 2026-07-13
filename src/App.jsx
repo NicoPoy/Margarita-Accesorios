@@ -16,9 +16,11 @@ import ProductCatalog from './components/ProductCatalog';
 import SiteFooter from './components/SiteFooter';
 import Toolbar from './components/Toolbar';
 import TopActions from './components/TopActions';
+import MobileNav from './components/MobileNav';
 import { DEFAULT_PRODUCT_IMAGE } from './data/products';
 import { hasSupabaseConfig, supabase } from './lib/supabase';
 import { downloadCsv } from './utils/csv';
+
 
 const mercadoPagoPaymentLink = import.meta.env.VITE_MERCADO_PAGO_PAYMENT_LINK;
 const productSelect =
@@ -1718,6 +1720,22 @@ function App() {
         />
       ) : null}
 
+
+      <MobileNav
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        cartCount={cartCount}
+        isCartOpen={isCartOpen}
+        onCartOpen={() => setIsCartOpen(true)}
+        onCartClose={() => setIsCartOpen(false)}
+        categories={categories}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+        session={session}
+        isAdmin={isAdmin}
+        onLoginOpen={() => openAuth('login')}
+        onLogout={handleLogout}
+      />
 
       <SiteFooter />
 
