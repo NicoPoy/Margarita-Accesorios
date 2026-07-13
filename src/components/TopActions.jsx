@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { CartIcon } from './icons';
 
+const sortOptions = [
+  { value: 'name-asc', label: 'Nombre A-Z' },
+  { value: 'price-asc', label: 'Menor precio' },
+  { value: 'price-desc', label: 'Mayor precio' },
+  { value: 'stock-desc', label: 'Mas stock' }
+];
+
 function TopActions({
   cartCount,
   currentView,
@@ -12,7 +19,11 @@ function TopActions({
   onClientViewChange,
   onLoginOpen,
   onLogout,
-  session
+  session,
+  query = '',
+  onQueryChange = () => {},
+  sortOrder = 'name-asc',
+  onSortOrderChange = () => {}
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -167,17 +178,53 @@ function TopActions({
 
             <div className="mobile-drawer-content">
               {session ? (
-                <>
-                  <div className="mobile-user-profile">
-                    <div className="profile-avatar">
-                      {displayName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="profile-info">
-                      <span className="profile-greeting">Hola,</span>
-                      <span className="profile-name">{displayName}</span>
-                    </div>
+                <div className="mobile-user-profile">
+                  <div className="profile-avatar">
+                    {displayName.charAt(0).toUpperCase()}
                   </div>
+                  <div className="profile-info">
+                    <span className="profile-greeting">Hola,</span>
+                    <span className="profile-name">{displayName}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="drawer-logged-out">
+                  <p>Inicia sesión para gestionar tus pedidos y acceder a tu perfil.</p>
+                  <button className="drawer-login-btn" type="button" onClick={handleLoginClick}>
+                    Iniciar sesión
+                  </button>
+                </div>
+              )}
 
+              {/* Search & Sort inside Drawer to keep home extremely clean */}
+              <div className="drawer-search-section">
+                <h4>Buscar Productos</h4>
+                <div className="drawer-search-box">
+                  <input
+                    value={query}
+                    onChange={(event) => onQueryChange(event.target.value)}
+                    placeholder="Aros, anillos, collares..."
+                  />
+                </div>
+              </div>
+
+              <div className="drawer-filter-section">
+                <h4>Ordenar por</h4>
+                <select
+                  className="drawer-select"
+                  value={sortOrder}
+                  onChange={(event) => onSortOrderChange(event.target.value)}
+                >
+                  {sortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {session && (
+                <>
                   <div className="drawer-nav-section">
                     <h4>Navegación</h4>
                     {isAdmin ? (
@@ -244,13 +291,6 @@ function TopActions({
                     </button>
                   </div>
                 </>
-              ) : (
-                <div className="drawer-logged-out">
-                  <p>Inicia sesión para gestionar tus pedidos y acceder a tu perfil.</p>
-                  <button className="drawer-login-btn" type="button" onClick={handleLoginClick}>
-                    Iniciar sesión
-                  </button>
-                </div>
               )}
             </div>
           </div>

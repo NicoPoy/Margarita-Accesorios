@@ -296,12 +296,13 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
   };
 
   return (
-    <div className="product-detail-backdrop" role="presentation">
+    <div className="product-detail-backdrop" role="presentation" onClick={handleClose}>
       <article
         className="product-detail"
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-detail-title"
+        onClick={(e) => e.stopPropagation()}
       >
         <button
           className="product-detail-close"
@@ -390,16 +391,27 @@ function ProductDetail({ canAddToCart, product, onAddToCart, onClose }) {
       </article>
 
       {zoomImage && (
-        <div className="product-zoom" role="dialog" aria-modal="true">
+        <div
+          className="product-zoom"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            e.stopPropagation();
+            setZoomImage(null);
+          }}
+        >
           <button
             className="product-zoom-close"
             type="button"
-            onClick={() => setZoomImage(null)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoomImage(null);
+            }}
             aria-label="Cerrar imagen ampliada"
           >
             x
           </button>
-          <img src={zoomImage} alt={product.name} />
+          <img src={zoomImage} alt={product.name} onClick={(e) => e.stopPropagation()} />
         </div>
       )}
     </div>

@@ -143,8 +143,8 @@ function AuthModal({ mode, onClose, onModeChange, onProfileChange }) {
   };
 
   return (
-    <div className="auth-backdrop" role="presentation">
-      <section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div className="auth-backdrop" role="presentation" onClick={onClose}>
+      <section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" onClick={(e) => e.stopPropagation()}>
         <button className="auth-close" type="button" onClick={onClose} aria-label="Cerrar">
           x
         </button>

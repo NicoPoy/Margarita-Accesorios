@@ -9,12 +9,13 @@ function ConfirmDialog({
   title
 }) {
   return (
-    <div className="confirm-backdrop" role="presentation">
+    <div className="confirm-backdrop" role="presentation" onClick={onCancel}>
       <section
         aria-labelledby="confirm-title"
         aria-modal="true"
         className="confirm-dialog"
         role="dialog"
+        onClick={(e) => e.stopPropagation()}
       >
         <span>{isDanger ? 'Atencion' : 'Confirmacion'}</span>
         <h2 id="confirm-title">{title}</h2>

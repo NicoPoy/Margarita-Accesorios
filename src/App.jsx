@@ -1587,6 +1587,10 @@ function App() {
         onLoginOpen={() => openAuth('login')}
         onLogout={handleLogout}
         session={session}
+        query={query}
+        onQueryChange={setQuery}
+        sortOrder={sortOrder}
+        onSortOrderChange={setSortOrder}
       />
 
       <Header />
