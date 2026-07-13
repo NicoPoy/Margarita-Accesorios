@@ -1575,173 +1575,332 @@ function App() {
     <main className="page-shell">
       <DocumentMeta description={pageMeta.description} title={pageMeta.title} />
 
-      <TopActions
-        cartCount={cartCount}
-        displayName={displayName}
-        isAdmin={isAdmin}
-        isClient={isClient}
-        currentView={currentView}
-        onAdminViewChange={openAdminView}
-        onCartOpen={() => setIsCartOpen(true)}
-        onClientViewChange={openClientView}
-        onLoginOpen={() => openAuth('login')}
-        onLogout={handleLogout}
-        session={session}
-        query={query}
-        onQueryChange={setQuery}
-        sortOrder={sortOrder}
-        onSortOrderChange={setSortOrder}
-      />
+      {/* =========================================================================
+          DESKTOP FRONT-END (Completely Isolated)
+          ========================================================================= */}
+      <div className="desktop-layout-root desktop-only">
+        <TopActions
+          cartCount={cartCount}
+          displayName={displayName}
+          isAdmin={isAdmin}
+          isClient={isClient}
+          currentView={currentView}
+          onAdminViewChange={openAdminView}
+          onCartOpen={() => setIsCartOpen(true)}
+          onClientViewChange={openClientView}
+          onLoginOpen={() => openAuth('login')}
+          onLogout={handleLogout}
+          session={session}
+          query={query}
+          onQueryChange={setQuery}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
+        />
 
-      <Header />
+        <Header />
 
-      {currentView === 'catalog' && (
-        <div className="catalog-layout-container">
-          <Toolbar
-            activeCategory={activeCategory}
-            adminStockFilter={adminStockFilter}
-            categories={categories}
-            isAdmin={isAdmin}
-            query={query}
-            sortOrder={sortOrder}
-            onCategoryChange={setActiveCategory}
-            onQueryChange={setQuery}
-            onSortOrderChange={setSortOrder}
-            onStockFilterChange={setAdminStockFilter}
-          />
+        {currentView === 'catalog' && (
+          <div className="catalog-layout-container">
+            <Toolbar
+              activeCategory={activeCategory}
+              adminStockFilter={adminStockFilter}
+              categories={categories}
+              isAdmin={isAdmin}
+              query={query}
+              sortOrder={sortOrder}
+              onCategoryChange={setActiveCategory}
+              onQueryChange={setQuery}
+              onSortOrderChange={setSortOrder}
+              onStockFilterChange={setAdminStockFilter}
+            />
 
-          <div className="catalog-content-panel">
-            {productsStatus && <p className="catalog-status">{productsStatus}</p>}
+            <div className="catalog-content-panel">
+              {productsStatus && <p className="catalog-status">{productsStatus}</p>}
 
-            {isAdmin && !editingProduct && (
+              {isAdmin && !editingProduct && (
+                <AdminPanel
+                  categories={catalogCategories}
+                  editingProduct={null}
+                  message={adminMessage}
+                  onCancelEdit={() => setEditingProduct(null)}
+                  onCreateProduct={createProduct}
+                  onExportProducts={exportProductsCsv}
+                  onUpdateProduct={updateProduct}
+                />
+              )}
+
+              <ProductCatalog
+                activeCategory={activeCategory}
+                canAddToCart={!isAdmin}
+                canManageProducts={isAdmin}
+                products={filteredProducts}
+                resetKey={[activeCategory, query, sortOrder, adminStockFilter, isAdmin].join("-")}
+                onAddToCart={addToCart}
+                onDeleteProduct={deleteProduct}
+                onEditProduct={editProduct}
+              />
+
+              {!isAdmin && <PaymentBanner />}
+            </div>
+          </div>
+        )}
+
+        {currentView === 'catalog' && isAdmin && editingProduct && (
+          <div className="admin-edit-modal-backdrop" role="presentation">
+            <div className="admin-edit-modal" role="dialog" aria-modal="true">
+              <button
+                className="admin-edit-modal-close"
+                type="button"
+                onClick={() => setEditingProduct(null)}
+                aria-label="Cerrar edicion"
+              >
+                x
+              </button>
               <AdminPanel
                 categories={catalogCategories}
-                editingProduct={null}
+                editingProduct={editingProduct}
                 message={adminMessage}
                 onCancelEdit={() => setEditingProduct(null)}
                 onCreateProduct={createProduct}
-                onExportProducts={exportProductsCsv}
+                onExportProducts={null}
                 onUpdateProduct={updateProduct}
               />
-            )}
+            </div>
+          </div>
+        )}
 
-            <ProductCatalog
+        {currentView === 'out-of-stock' && isAdmin && (
+          <AdminOutOfStock
+            products={outOfStockProducts}
+            onDeleteProduct={deleteProduct}
+            onEditProduct={editProduct}
+          />
+        )}
+
+        {currentView === 'categories' && isAdmin && (
+          <AdminCategories
+            categories={catalogCategories}
+            message={adminMessage}
+            productCounts={productCountsByCategory}
+            onCreateCategory={createCategory}
+            onRenameCategory={renameCategory}
+            onToggleCategory={toggleCategory}
+          />
+        )}
+
+        {currentView === 'raffles' && isAdmin && <AdminRaffles />}
+
+        {currentView === 'orders' && isAdmin ? (
+          <AdminOrders
+            isLoading={isLoadingOrders}
+            message={ordersStatus}
+            orders={adminOrders}
+            onCancelOrder={cancelOrder}
+            onExportOrders={exportOrdersCsv}
+            onMarkDelivered={markOrderDelivered}
+            onPaymentReceived={confirmOrderPaymentReceived}
+            onRefresh={loadAdminOrders}
+          />
+        ) : currentView === 'my-orders' && !isAdmin ? (
+          <AdminOrders
+            badge="Historial"
+            emptyText="Todavia no realizaste pedidos."
+            isLoading={isLoadingOrders}
+            message={ordersStatus}
+            orders={userOrders}
+            showCustomer={false}
+            title="Mis pedidos"
+            onRefresh={loadUserOrders}
+          />
+        ) : currentView === 'order-success' && !isAdmin ? (
+          <OrderSuccess
+            order={completedOrder}
+            onBackToCatalog={() => setCurrentView('catalog')}
+            onViewOrders={() => setCurrentView('my-orders')}
+          />
+        ) : currentView === 'checkout' ? (
+          <CheckoutView
+            cartItems={cartItems}
+            checkoutMessage={checkoutMessage}
+            isSubmitting={isSubmittingOrder}
+            onBack={() => setCurrentView('catalog')}
+            onFinishOrder={finishOrder}
+          />
+        ) : null}
+
+        <SiteFooter />
+      </div>
+
+
+      {/* =========================================================================
+          MOBILE FRONT-END (Completely Isolated)
+          ========================================================================= */}
+      <div className="mobile-layout-root mobile-only">
+        <TopActions
+          cartCount={cartCount}
+          displayName={displayName}
+          isAdmin={isAdmin}
+          isClient={isClient}
+          currentView={currentView}
+          onAdminViewChange={openAdminView}
+          onCartOpen={() => setIsCartOpen(true)}
+          onClientViewChange={openClientView}
+          onLoginOpen={() => openAuth('login')}
+          onLogout={handleLogout}
+          session={session}
+          query={query}
+          onQueryChange={setQuery}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
+        />
+
+        {currentView === 'catalog' && (
+          <div className="catalog-layout-container">
+            <Toolbar
               activeCategory={activeCategory}
-              canAddToCart={!isAdmin}
-              canManageProducts={isAdmin}
-              products={filteredProducts}
-              resetKey={[activeCategory, query, sortOrder, adminStockFilter, isAdmin].join("-")}
-              onAddToCart={addToCart}
-              onDeleteProduct={deleteProduct}
-              onEditProduct={editProduct}
+              adminStockFilter={adminStockFilter}
+              categories={categories}
+              isAdmin={isAdmin}
+              query={query}
+              sortOrder={sortOrder}
+              onCategoryChange={setActiveCategory}
+              onQueryChange={setQuery}
+              onSortOrderChange={setSortOrder}
+              onStockFilterChange={setAdminStockFilter}
             />
 
-            {!isAdmin && <PaymentBanner />}
+            <div className="catalog-content-panel">
+              {productsStatus && <p className="catalog-status">{productsStatus}</p>}
+
+              {isAdmin && !editingProduct && (
+                <AdminPanel
+                  categories={catalogCategories}
+                  editingProduct={null}
+                  message={adminMessage}
+                  onCancelEdit={() => setEditingProduct(null)}
+                  onCreateProduct={createProduct}
+                  onExportProducts={exportProductsCsv}
+                  onUpdateProduct={updateProduct}
+                />
+              )}
+
+              <ProductCatalog
+                activeCategory={activeCategory}
+                canAddToCart={!isAdmin}
+                canManageProducts={isAdmin}
+                products={filteredProducts}
+                resetKey={[activeCategory, query, sortOrder, adminStockFilter, isAdmin].join("-")}
+                onAddToCart={addToCart}
+                onDeleteProduct={deleteProduct}
+                onEditProduct={editProduct}
+              />
+
+              {!isAdmin && <PaymentBanner />}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {currentView === 'catalog' && isAdmin && editingProduct && (
-        <div className="admin-edit-modal-backdrop" role="presentation">
-          <div className="admin-edit-modal" role="dialog" aria-modal="true">
-            <button
-              className="admin-edit-modal-close"
-              type="button"
-              onClick={() => setEditingProduct(null)}
-              aria-label="Cerrar edicion"
-            >
-              x
-            </button>
-            <AdminPanel
-              categories={catalogCategories}
-              editingProduct={editingProduct}
-              message={adminMessage}
-              onCancelEdit={() => setEditingProduct(null)}
-              onCreateProduct={createProduct}
-              onExportProducts={null}
-              onUpdateProduct={updateProduct}
-            />
+        {currentView === 'catalog' && isAdmin && editingProduct && (
+          <div className="admin-edit-modal-backdrop" role="presentation">
+            <div className="admin-edit-modal" role="dialog" aria-modal="true">
+              <button
+                className="admin-edit-modal-close"
+                type="button"
+                onClick={() => setEditingProduct(null)}
+                aria-label="Cerrar edicion"
+              >
+                x
+              </button>
+              <AdminPanel
+                categories={catalogCategories}
+                editingProduct={editingProduct}
+                message={adminMessage}
+                onCancelEdit={() => setEditingProduct(null)}
+                onCreateProduct={createProduct}
+                onExportProducts={null}
+                onUpdateProduct={updateProduct}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {currentView === 'out-of-stock' && isAdmin && (
-        <AdminOutOfStock
-          products={outOfStockProducts}
-          onDeleteProduct={deleteProduct}
-          onEditProduct={editProduct}
+        {currentView === 'out-of-stock' && isAdmin && (
+          <AdminOutOfStock
+            products={outOfStockProducts}
+            onDeleteProduct={deleteProduct}
+            onEditProduct={editProduct}
+          />
+        )}
+
+        {currentView === 'categories' && isAdmin && (
+          <AdminCategories
+            categories={catalogCategories}
+            message={adminMessage}
+            productCounts={productCountsByCategory}
+            onCreateCategory={createCategory}
+            onRenameCategory={renameCategory}
+            onToggleCategory={toggleCategory}
+          />
+        )}
+
+        {currentView === 'raffles' && isAdmin && <AdminRaffles />}
+
+        {currentView === 'orders' && isAdmin ? (
+          <AdminOrders
+            isLoading={isLoadingOrders}
+            message={ordersStatus}
+            orders={adminOrders}
+            onCancelOrder={cancelOrder}
+            onExportOrders={exportOrdersCsv}
+            onMarkDelivered={markOrderDelivered}
+            onPaymentReceived={confirmOrderPaymentReceived}
+            onRefresh={loadAdminOrders}
+          />
+        ) : currentView === 'my-orders' && !isAdmin ? (
+          <AdminOrders
+            badge="Historial"
+            emptyText="Todavia no realizaste pedidos."
+            isLoading={isLoadingOrders}
+            message={ordersStatus}
+            orders={userOrders}
+            showCustomer={false}
+            title="Mis pedidos"
+            onRefresh={loadUserOrders}
+          />
+        ) : currentView === 'order-success' && !isAdmin ? (
+          <OrderSuccess
+            order={completedOrder}
+            onBackToCatalog={() => setCurrentView('catalog')}
+            onViewOrders={() => setCurrentView('my-orders')}
+          />
+        ) : currentView === 'checkout' ? (
+          <CheckoutView
+            cartItems={cartItems}
+            checkoutMessage={checkoutMessage}
+            isSubmitting={isSubmittingOrder}
+            onBack={() => setCurrentView('catalog')}
+            onFinishOrder={finishOrder}
+          />
+        ) : null}
+
+        <MobileNav
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          cartCount={cartCount}
+          isCartOpen={isCartOpen}
+          onCartOpen={() => setIsCartOpen(true)}
+          onCartClose={() => setIsCartOpen(false)}
+          categories={categories}
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          session={session}
+          isAdmin={isAdmin}
+          onLoginOpen={() => openAuth('login')}
+          onLogout={handleLogout}
         />
-      )}
 
-      {currentView === 'categories' && isAdmin && (
-        <AdminCategories
-          categories={catalogCategories}
-          message={adminMessage}
-          productCounts={productCountsByCategory}
-          onCreateCategory={createCategory}
-          onRenameCategory={renameCategory}
-          onToggleCategory={toggleCategory}
-        />
-      )}
-
-      {currentView === 'raffles' && isAdmin && <AdminRaffles />}
-
-      {currentView === 'orders' && isAdmin ? (
-        <AdminOrders
-          isLoading={isLoadingOrders}
-          message={ordersStatus}
-          orders={adminOrders}
-          onCancelOrder={cancelOrder}
-          onExportOrders={exportOrdersCsv}
-          onMarkDelivered={markOrderDelivered}
-          onPaymentReceived={confirmOrderPaymentReceived}
-          onRefresh={loadAdminOrders}
-        />
-      ) : currentView === 'my-orders' && !isAdmin ? (
-        <AdminOrders
-          badge="Historial"
-          emptyText="Todavia no realizaste pedidos."
-          isLoading={isLoadingOrders}
-          message={ordersStatus}
-          orders={userOrders}
-          showCustomer={false}
-          title="Mis pedidos"
-          onRefresh={loadUserOrders}
-        />
-      ) : currentView === 'order-success' && !isAdmin ? (
-        <OrderSuccess
-          order={completedOrder}
-          onBackToCatalog={() => setCurrentView('catalog')}
-          onViewOrders={() => setCurrentView('my-orders')}
-        />
-      ) : currentView === 'checkout' ? (
-        <CheckoutView
-          cartItems={cartItems}
-          checkoutMessage={checkoutMessage}
-          isSubmitting={isSubmittingOrder}
-          onBack={() => setCurrentView('catalog')}
-          onFinishOrder={finishOrder}
-        />
-      ) : null}
-
-
-      <MobileNav
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        cartCount={cartCount}
-        isCartOpen={isCartOpen}
-        onCartOpen={() => setIsCartOpen(true)}
-        onCartClose={() => setIsCartOpen(false)}
-        categories={categories}
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-        session={session}
-        isAdmin={isAdmin}
-        onLoginOpen={() => openAuth('login')}
-        onLogout={handleLogout}
-      />
-
-      <SiteFooter />
+        <SiteFooter />
+      </div>
 
       {isAuthOpen && (
         <AuthModal
