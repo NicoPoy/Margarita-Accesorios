@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CartIcon } from './icons';
+import SideNavigation from './SideNavigation';
 
 const sortOptions = [
   { value: 'name-asc', label: 'Nombre A-Z' },
@@ -50,9 +51,18 @@ function TopActions({
     <>
       {/* Desktop View */}
       <div className="top-actions desktop-only">
-        <div className="desktop-header-brand" onClick={() => onClientViewChange('catalog')} style={{ cursor: 'pointer' }}>
-          <img src="/logo-margarita.png" alt="Margarita Logo" className="desktop-brand-logo" />
-          <span className="desktop-brand-name">Margarita Accesorios</span>
+        <div className="desktop-header-left">
+          <SideNavigation
+            currentView={currentView}
+            isAdmin={isAdmin}
+            onAdminViewChange={onAdminViewChange}
+            onClientViewChange={onClientViewChange}
+          />
+
+          <div className="desktop-header-brand" onClick={() => onClientViewChange('catalog')} style={{ cursor: 'pointer' }}>
+            <img src="/logo-margarita.png" alt="Margarita Logo" className="desktop-brand-logo" />
+            <span className="desktop-brand-name">Margarita Accesorios</span>
+          </div>
         </div>
 
         <div className="desktop-header-search">

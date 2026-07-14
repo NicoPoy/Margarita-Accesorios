@@ -601,6 +601,8 @@ function App() {
   }, [activeCategory, activeProducts, adminStockFilter, catalogProducts, isAdmin, priceFilter, query, sortOrder]);
 
   useEffect(() => {
+    if (!filteredProducts.length) return;
+
     const maxItems = Math.max(1, filteredProducts.length);
 
     if (itemsPerPage > maxItems) {
