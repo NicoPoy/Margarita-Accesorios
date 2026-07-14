@@ -30,7 +30,7 @@ export default function MobileNav({
       }
     } else {
       if (onCartClose) onCartClose();
-      setCurrentView('catalog');
+      setCurrentView('home');
     }
   };
 
@@ -41,7 +41,7 @@ export default function MobileNav({
   };
 
   // Determine active states
-  const isHomeActive = currentView === 'catalog' && !isCategorySheetOpen && !isCartOpen;
+  const isHomeActive = currentView === 'home' && !isCategorySheetOpen && !isCartOpen;
   const isOrdersActive = (currentView === 'orders' || currentView === 'my-orders') && !isCartOpen;
 
   return (

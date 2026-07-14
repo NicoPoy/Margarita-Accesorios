@@ -59,7 +59,7 @@ function TopActions({
             onClientViewChange={onClientViewChange}
           />
 
-          <div className="desktop-header-brand" onClick={() => onClientViewChange('catalog')} style={{ cursor: 'pointer' }}>
+          <div className="desktop-header-brand" onClick={() => onClientViewChange('home')} style={{ cursor: 'pointer' }}>
             <img src="/logo-margarita.png" alt="Margarita Logo" className="desktop-brand-logo" />
             <span className="desktop-brand-name">Margarita Accesorios</span>
           </div>

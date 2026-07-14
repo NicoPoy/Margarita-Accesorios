@@ -6,10 +6,12 @@ import AdminPanel from './components/AdminPanel';
 import AdminRaffles from './components/AdminRaffles';
 import AuthModal from './components/AuthModal';
 import CartDrawer from './components/CartDrawer';
+import CartView from './components/CartView';
 import CheckoutView from './components/CheckoutView';
 import ConfirmDialog from './components/ConfirmDialog';
 import DocumentMeta from './components/DocumentMeta';
 import BannerCarousel from './components/BannerCarousel';
+import HomeView from './components/HomeView';
 import OrderSuccess from './components/OrderSuccess';
 import PaymentBanner from './components/PaymentBanner';
 import ProductCatalog from './components/ProductCatalog';
@@ -25,6 +27,33 @@ import { downloadCsv } from './utils/csv';
 const mercadoPagoPaymentLink = import.meta.env.VITE_MERCADO_PAGO_PAYMENT_LINK;
 const productSelect =
   'id, nombre, categoria, categoria_id, precio, stock, imagen_url, imagenes_url, imagen_path, variedades, activo, categorias(id, nombre), producto_variantes(id, nombre, color, modelo, stock, activo)';
+
+const viewRoutes = {
+  home: '/home',
+  catalog: '/catalogo',
+  cart: '/carrito',
+  login: '/login',
+  checkout: '/checkout',
+  'order-success': '/pedido-completo',
+  'my-orders': '/mis-pedidos',
+  orders: '/admin/pedidos',
+  'out-of-stock': '/admin/sin-stock',
+  categories: '/admin/categorias',
+  raffles: '/admin/sorteos'
+};
+
+const routeViews = Object.entries(viewRoutes).reduce(
+  (routes, [view, route]) => ({ ...routes, [route]: view }),
+  {
+    '/': 'home'
+  }
+);
+
+const getViewFromLocation = () => {
+  if (typeof window === 'undefined') return 'home';
+
+  return routeViews[window.location.pathname] || 'home';
+};
 
 const defaultCategoryNames = [
   'Accesorios',
@@ -306,7 +335,7 @@ function App() {
   const [checkoutMessage, setCheckoutMessage] = useState('');
   const [completedOrder, setCompletedOrder] = useState(null);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
-  const [currentView, setCurrentView] = useState('catalog');
+  const [currentView, setCurrentView] = useState(getViewFromLocation);
   const [productsStatus, setProductsStatus] = useState('');
   const [adminMessage, setAdminMessage] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
@@ -343,6 +372,27 @@ function App() {
     const baseTitle = 'Margarita Accesorios';
     const baseDescription =
       'Catalogo online de Margarita Accesorios: aros, anillos, hebillas, collares, pulseras y accesorios con entregas en La Plata y Canuelas.';
+
+    if (currentView === 'home') {
+      return {
+        title: `Inicio | ${baseTitle}`,
+        description: baseDescription
+      };
+    }
+
+    if (currentView === 'cart') {
+      return {
+        title: `Carrito | ${baseTitle}`,
+        description: 'Revisa los productos seleccionados antes de finalizar tu pedido.'
+      };
+    }
+
+    if (currentView === 'login') {
+      return {
+        title: `Ingresar | ${baseTitle}`,
+        description: 'Inicia sesion o crea tu cuenta en Margarita Accesorios.'
+      };
+    }
 
     if (currentView === 'checkout') {
       return {
@@ -395,6 +445,26 @@ function App() {
   useEffect(() => {
     saveStoredCartItems(cartItems);
   }, [cartItems]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentView(getViewFromLocation());
+      setIsAuthOpen(false);
+      setIsCartOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const nextRoute = viewRoutes[currentView] || viewRoutes.home;
+
+    if (window.location.pathname !== nextRoute) {
+      window.history.pushState({}, '', nextRoute);
+    }
+  }, [currentView]);
 
   useEffect(() => {
     if (!hasSupabaseConfig) return undefined;
@@ -679,7 +749,8 @@ function App() {
 
   const openAuth = (mode) => {
     setAuthMode(mode);
-    setIsAuthOpen(true);
+    setIsAuthOpen(false);
+    setCurrentView('login');
   };
 
   const handleLogout = async () => {
@@ -692,7 +763,7 @@ function App() {
     setUserRoles([]);
     setCartItems([]);
     setIsCartOpen(false);
-    setCurrentView('catalog');
+    setCurrentView('home');
   };
 
   const openAdminView = (view) => {
@@ -705,6 +776,8 @@ function App() {
 
   const openClientView = (view) => {
     setCurrentView(view);
+    setIsCartOpen(false);
+    setIsAuthOpen(false);
     setCheckoutMessage('');
     setOrdersStatus('');
   };
@@ -1034,6 +1107,11 @@ function App() {
   const editProduct = (product) => {
     setEditingProduct(product);
     setCurrentView('catalog');
+  };
+
+  const openCatalogCategory = (category) => {
+    setActiveCategory(category);
+    openClientView('catalog');
   };
 
   const productCountsByCategory = useMemo(
@@ -1603,7 +1681,7 @@ function App() {
           isClient={isClient}
           currentView={currentView}
           onAdminViewChange={openAdminView}
-          onCartOpen={() => setIsCartOpen(true)}
+          onCartOpen={() => openClientView('cart')}
           onClientViewChange={openClientView}
           onLoginOpen={() => openAuth('login')}
           onLogout={handleLogout}
@@ -1613,6 +1691,17 @@ function App() {
           sortOrder={sortOrder}
           onSortOrderChange={setSortOrder}
         />
+        {currentView === 'home' && (
+          <HomeView
+            categories={categories}
+            products={activeProducts}
+            session={session}
+            onCategoryOpen={openCatalogCategory}
+            onLoginOpen={() => openAuth('login')}
+            onViewCatalog={() => openClientView('catalog')}
+          />
+        )}
+
         {currentView === 'catalog' && <BannerCarousel />}
 
         {currentView === 'catalog' && (
@@ -1710,7 +1799,27 @@ function App() {
 
         {currentView === 'raffles' && isAdmin && <AdminRaffles />}
 
-        {currentView === 'orders' && isAdmin ? (
+        {currentView === 'cart' && !isAdmin ? (
+          <CartView
+            cartItems={cartItems}
+            cartMessage={cartMessage}
+            isClient={isClient}
+            onCheckout={checkoutCart}
+            onDecrease={decreaseCartItem}
+            onIncrease={increaseCartItem}
+            onRemove={removeCartItem}
+            onClear={clearCart}
+            onViewCatalog={() => openClientView('catalog')}
+          />
+        ) : currentView === 'login' ? (
+          <AuthModal
+            mode={authMode}
+            onClose={() => openClientView('catalog')}
+            onModeChange={setAuthMode}
+            onProfileChange={setProfile}
+            variant="page"
+          />
+        ) : currentView === 'orders' && isAdmin ? (
           <AdminOrders
             isLoading={isLoadingOrders}
             message={ordersStatus}
@@ -1735,15 +1844,15 @@ function App() {
         ) : currentView === 'order-success' && !isAdmin ? (
           <OrderSuccess
             order={completedOrder}
-            onBackToCatalog={() => setCurrentView('catalog')}
-            onViewOrders={() => setCurrentView('my-orders')}
+            onBackToCatalog={() => openClientView('catalog')}
+            onViewOrders={() => openClientView('my-orders')}
           />
         ) : currentView === 'checkout' ? (
           <CheckoutView
             cartItems={cartItems}
             checkoutMessage={checkoutMessage}
             isSubmitting={isSubmittingOrder}
-            onBack={() => setCurrentView('catalog')}
+            onBack={() => openClientView('catalog')}
             onFinishOrder={finishOrder}
           />
         ) : null}
@@ -1763,7 +1872,7 @@ function App() {
           isClient={isClient}
           currentView={currentView}
           onAdminViewChange={openAdminView}
-          onCartOpen={() => setIsCartOpen(true)}
+          onCartOpen={() => openClientView('cart')}
           onClientViewChange={openClientView}
           onLoginOpen={() => openAuth('login')}
           onLogout={handleLogout}
@@ -1773,6 +1882,17 @@ function App() {
           sortOrder={sortOrder}
           onSortOrderChange={setSortOrder}
         />
+
+        {currentView === 'home' && (
+          <HomeView
+            categories={categories}
+            products={activeProducts}
+            session={session}
+            onCategoryOpen={openCatalogCategory}
+            onLoginOpen={() => openAuth('login')}
+            onViewCatalog={() => openClientView('catalog')}
+          />
+        )}
 
         {currentView === 'catalog' && <BannerCarousel />}
 
@@ -1871,7 +1991,27 @@ function App() {
 
         {currentView === 'raffles' && isAdmin && <AdminRaffles />}
 
-        {currentView === 'orders' && isAdmin ? (
+        {currentView === 'cart' && !isAdmin ? (
+          <CartView
+            cartItems={cartItems}
+            cartMessage={cartMessage}
+            isClient={isClient}
+            onCheckout={checkoutCart}
+            onDecrease={decreaseCartItem}
+            onIncrease={increaseCartItem}
+            onRemove={removeCartItem}
+            onClear={clearCart}
+            onViewCatalog={() => openClientView('catalog')}
+          />
+        ) : currentView === 'login' ? (
+          <AuthModal
+            mode={authMode}
+            onClose={() => openClientView('catalog')}
+            onModeChange={setAuthMode}
+            onProfileChange={setProfile}
+            variant="page"
+          />
+        ) : currentView === 'orders' && isAdmin ? (
           <AdminOrders
             isLoading={isLoadingOrders}
             message={ordersStatus}
@@ -1896,15 +2036,15 @@ function App() {
         ) : currentView === 'order-success' && !isAdmin ? (
           <OrderSuccess
             order={completedOrder}
-            onBackToCatalog={() => setCurrentView('catalog')}
-            onViewOrders={() => setCurrentView('my-orders')}
+            onBackToCatalog={() => openClientView('catalog')}
+            onViewOrders={() => openClientView('my-orders')}
           />
         ) : currentView === 'checkout' ? (
           <CheckoutView
             cartItems={cartItems}
             checkoutMessage={checkoutMessage}
             isSubmitting={isSubmittingOrder}
-            onBack={() => setCurrentView('catalog')}
+            onBack={() => openClientView('catalog')}
             onFinishOrder={finishOrder}
           />
         ) : null}
@@ -1914,7 +2054,7 @@ function App() {
           setCurrentView={setCurrentView}
           cartCount={cartCount}
           isCartOpen={isCartOpen}
-          onCartOpen={() => setIsCartOpen(true)}
+          onCartOpen={() => openClientView('cart')}
           onCartClose={() => setIsCartOpen(false)}
           categories={categories}
           activeCategory={activeCategory}

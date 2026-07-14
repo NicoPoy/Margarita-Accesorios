@@ -11,6 +11,15 @@ const navGroups = [
     title: 'Principal',
     items: [
       {
+        view: 'home',
+        label: 'Home',
+        icon: (
+          <Icon>
+            <path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5Z" />
+          </Icon>
+        )
+      },
+      {
         view: 'catalog',
         label: 'Catalogo',
         icon: (

@@ -11,7 +11,7 @@ const emptyAuthForm = {
   password: ''
 };
 
-function AuthModal({ mode, onClose, onModeChange, onProfileChange }) {
+function AuthModal({ mode, onClose, onModeChange, onProfileChange, variant = 'modal' }) {
   const [form, setForm] = useState(emptyAuthForm);
   const [status, setStatus] = useState({ type: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,12 +142,19 @@ function AuthModal({ mode, onClose, onModeChange, onProfileChange }) {
     }
   };
 
-  return (
-    <div className="auth-backdrop" role="presentation" onClick={onClose}>
-      <section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" onClick={(e) => e.stopPropagation()}>
-        <button className="auth-close" type="button" onClick={onClose} aria-label="Cerrar">
+  const content = (
+    <section
+      className={`auth-modal ${variant === 'page' ? 'auth-page-card' : ''}`}
+      role={variant === 'modal' ? 'dialog' : 'region'}
+      aria-modal={variant === 'modal' ? 'true' : undefined}
+      aria-labelledby="auth-title"
+      onClick={(e) => e.stopPropagation()}
+    >
+        {variant === 'modal' && (
+          <button className="auth-close" type="button" onClick={onClose} aria-label="Cerrar">
           x
-        </button>
+          </button>
+        )}
 
         <div className="auth-heading">
           <span>{isRegister ? 'Crear cuenta' : 'Acceso'}</span>
@@ -232,6 +239,43 @@ function AuthModal({ mode, onClose, onModeChange, onProfileChange }) {
           </button>
         </form>
       </section>
+  );
+
+  if (variant === 'page') {
+    return (
+      <div className="auth-page-view">
+        <section className="auth-page-hero" aria-label="Margarita Accesorios">
+          <div className="auth-page-emblem" aria-hidden="true">
+            <img src="/logo-margarita.png" alt="" />
+          </div>
+          <div className="auth-page-copy">
+            <span>Margarita Accesorios</span>
+            <h1>Accesorios que brillan con vos</h1>
+            <p>
+              Gestiona tus pedidos, guarda tus datos y segui tus compras de forma simple.
+            </p>
+          </div>
+          <div className="auth-page-tags" aria-label="Categorias destacadas">
+            <span>Aritos</span>
+            <span>Collares</span>
+            <span>Anillos</span>
+            <span>Regaleria</span>
+          </div>
+        </section>
+        <div className="auth-page-panel">
+          {content}
+          <p className="auth-page-note">
+            Registro para clientas de Margarita Accesorios. Tus datos se usan solo para coordinar
+            compras y entregas.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="auth-backdrop" role="presentation" onClick={onClose}>
+      {content}
     </div>
   );
 }
